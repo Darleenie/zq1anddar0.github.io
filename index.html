@@ -14,21 +14,22 @@
   <section class="section find-stuff">
     <h2>Find My Stuff</h2>
     <input type="text" id="itemInput" placeholder="Enter item name" />
-    <button onclick="findItem()">Find</button>
+    <button onclick="searchItem()">Find</button>
+    <div id="searchResult" class="search-result"></div>
   </section>
 
-  <section class="section room" onclick="navigateTo('zq1.html')">
+  <section class="section room zq1-room" onclick="navigateTo('zq1.html')">
     <h2>zq1's Room</h2>
   </section>
 
-  <section class="section room" onclick="navigateTo('dar0.html')">
+  <section class="section room dar0-room" onclick="navigateTo('dar0.html')">
     <h2>dar0's Room</h2>
   </section>
 
-  <section class="section room" onclick="navigateTo('living.html')">
+  <section class="section room living-room" onclick="navigateTo('living.html')">
     <h2>Living Room</h2>
   </section>
 
-  <script src="script.js"></script>
+  <script src="js/search.js"></script>
 </body>
 </html>

@@ -94,17 +94,17 @@
   
   .zq1-room {
     color: white;
-    background-image: url('assets/zq1.jpg'); /* Replace with your image URL */
+    background-image: url('../assets/zq1.jpg'); /* Replace with your image URL */
   }
 
   .dar0-room {
     color: white;
-    background-image: url('assets/dar0.jpg'); /* Replace with your image URL */
+    background-image: url('../assets/dar0.jpg'); /* Replace with your image URL */
   }
 
   .living-room {
     color: white;
-    background-image: url('assets/living.jpg'); /* Replace with your image URL */
+    background-image: url('../assets/living.jpg'); /* Replace with your image URL */
   }
   
   @media (max-width: 600px) {

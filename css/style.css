@@ -66,9 +66,10 @@
   }
   
   .search-result img {
-    max-width: 100%;
+    max-width: 70%;
     height: auto;
     margin-bottom: 10px;
+    margin-top: 10px;
   }
   
   .search-result p {

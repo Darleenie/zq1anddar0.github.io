@@ -1,21 +1,21 @@
 // Sample data representing your items
-const items = [
-    {
-      name: "Bowls",
-      image: "../assets/bowls.jpg",
-      location: "Right Kitchen Cabinet, Second Floor"
-    },
-    {
-      name: "Switch",
-      image: "../assets/switch.jpg",
-      location: "Living Room Desk"
-    },
-    {
-      name: "Shoe Cleaner",
-      image: "../assets/shoe_cleaner.jpg",
-      location: "Entrance Brown Cabinet"
-    }
-  ];
+// const items = [
+//     {
+//       name: "Bowls",
+//       image: "../assets/bowls.jpg",
+//       location: "Right Kitchen Cabinet, Second Floor"
+//     },
+//     {
+//       name: "Switch",
+//       image: "../assets/switch.jpg",
+//       location: "Living Room Desk"
+//     },
+//     {
+//       name: "Shoe Cleaner",
+//       image: "../assets/shoe_cleaner.jpg",
+//       location: "Entrance Brown Cabinet"
+//     }
+//   ];
 
 // Function to handle the search
 function searchItem() {
@@ -44,7 +44,7 @@ function searchItem() {
   function moreInfo(itemName) {
     // Redirect to a detailed page or perform another action
     // For demonstration, we'll redirect to a generic page
-    window.location.href = `search.html?item=${encodeURIComponent(itemName)}`;
+    window.location.href = `pages/search.html?item=${encodeURIComponent(itemName)}`;
   }
   
   // Add event listener to the search input

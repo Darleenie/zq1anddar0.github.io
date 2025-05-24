@@ -1,17 +1,17 @@
 [
     {
       "name": "Bowls",
-      "image": "images/bowls.jpg",
+      "image": "assets/bowls.jpg",
       "location": "Kitchen Cabinet"
     },
     {
       "name": "Switch",
-      "image": "images/switch.jpg",
+      "image": "assets/switch.jpg",
       "location": "Living Room Wall"
     },
     {
       "name": "Shoe Cleaner",
-      "image": "images/shoe_cleaner.jpg",
+      "image": "assets/shoe_cleaner.jpg",
       "location": "Entrance Hall"
     }
   ]

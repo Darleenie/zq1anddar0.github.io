@@ -7,8 +7,24 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <!-- In your HTML page -->
+  <section>
+    <div id="nav-placeholder"></div>
+  </section>
+
   <section class="section welcome">
-    <img src="assets/wifi.jpg" alt="WiFi Password: zq1anddar0 /n Welcome" />
+    <img src="assets/wifi.png" alt="WiFi Password: zq1anddar0 /n Welcome" />
+  </section>
+
+  <!-- Alexa Commands -->
+  <section class="section">
+    <h2 class="h2">Alexa Command List</h2>
+    <ul class="ul">
+      <li>"Alexa, bright the room"</li>
+      <li>"Alexa, meal time"</li>
+      <li>"Alexa, I'm leaving"</li>
+      <li>"Alexa, good night"</li>
+    </ul>
   </section>
 
   <section class="section find-stuff">
@@ -18,15 +34,15 @@
     <div id="searchResult" class="search-result"></div>
   </section>
 
-  <section class="section room zq1-room" onclick="navigateTo('zq1.html')">
+  <section class="section zq1-room room " onclick="navigateTo('pages/zq1.html')">
     <h2>zq1's Room</h2>
   </section>
 
-  <section class="section room dar0-room" onclick="navigateTo('dar0.html')">
+  <section class=" section dar0-room room" onclick="navigateTo('pages/dar0.html')">
     <h2>dar0's Room</h2>
   </section>
 
-  <section class="section room living-room" onclick="navigateTo('living.html')">
+  <section class=" section living-room room" onclick="navigateTo('pages/living.html')">
     <h2>Living Room</h2>
   </section>
 
@@ -36,5 +52,6 @@
       window.location.href = url;
     }
   </script>
+  <script src="js/nav.js"></script>
 </body>
 </html>

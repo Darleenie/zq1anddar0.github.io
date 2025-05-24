@@ -32,6 +32,7 @@
   .ul {
     list-style-type: none;
     padding-left: 20px;
+    flex-direction: column;
   }
   
   .welcome img {

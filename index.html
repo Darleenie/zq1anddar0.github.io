@@ -29,9 +29,12 @@
 
   <section class="section find-stuff">
     <h2>Find My Stuff</h2>
+    <div id="home-notif-badge" class="home-notif-badge" style="display:none"></div>
     <input type="text" id="itemInput" placeholder="Enter item name" />
-    <button onclick="searchItem()">Find</button>
-    <div id="searchResult" class="search-result"></div>
+    <div class="find-stuff-btns">
+      <button onclick="searchItem()">Search</button>
+      <a href="pages/search.html" class="btn-view-all">View All Items</a>
+    </div>
   </section>
 
   <section class="section zq1-room room " onclick="navigateTo('pages/zq1.html')">
@@ -51,7 +54,28 @@
     function navigateTo(url) {
       window.location.href = url;
     }
+
+    // Show alert count badge on home page
+    document.addEventListener('DOMContentLoaded', () => {
+      const items = JSON.parse(localStorage.getItem('inventoryItems') || '[]');
+      const CONSUMABLE = ['food', 'medicine', 'cleaning'];
+      let alertCount = 0;
+      items.forEach(item => {
+        const qty = Number(item.qty);
+        if (qty === 0) alertCount++;
+        else if (qty <= 2 && CONSUMABLE.includes(item.classification)) alertCount++;
+        if (item.expirationDate) {
+          const days = Math.ceil((new Date(item.expirationDate) - new Date()) / 86400000);
+          if (days <= 14) alertCount++;
+        }
+      });
+      const badge = document.getElementById('home-notif-badge');
+      if (badge && alertCount > 0) {
+        badge.style.display = '';
+        badge.textContent = alertCount + ' alert' + (alertCount !== 1 ? 's' : '') + ' — check your inventory';
+      }
+    });
   </script>
-  <script src="js/nav.js"></script>
+  <script src="js/nav.js" defer></script>
 </body>
 </html>

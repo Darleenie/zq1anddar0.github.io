@@ -5,10 +5,14 @@ fetch('../pages/nav.html')
     });
 
 
-const menuToggle = document.getElementById('mobile-menu');
-const navMenu = document.querySelector('.nav-menu');
-// const navLinks = document.querySelectorAll('.nav-menu li a');
+// nav.js
+document.addEventListener('DOMContentLoaded', () => {
+  const menuToggle = document.getElementById('mobile-menu');
+  const navMenu = document.getElementById('nav-menu');
 
-menuToggle.addEventListener('click', () => {
-    navMenu.classList.toggle('active');
+  if (menuToggle && navMenu) {
+    menuToggle.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  }
 });

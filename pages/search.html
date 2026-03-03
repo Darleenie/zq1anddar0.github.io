@@ -3,24 +3,140 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Search Items</title>
+  <title>Find My Stuff</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
-  <!-- In your HTML page -->
+
   <section>
     <div id="nav-placeholder"></div>
   </section>
-  <section class="section search-page">
-    <h2>Search Results</h2>
-    <input type="text" id="searchInput" placeholder="Search items..." />
-    <ul id="itemList">
-      <li class="item">Bowls</li>
-      <li class="item">Switch</li>
-      <li class="item">Shoe Cleaner</li>
-      <!-- Add more items as needed -->
-    </ul>
-  </section>
-  <script src="../js/search.js"></script>
+
+  <!-- Notification Banner -->
+  <div id="notification-banner" class="notification-banner" style="display:none"></div>
+
+  <main class="inventory-main">
+
+    <!-- Header -->
+    <div class="inventory-header">
+      <h1><i class="fas fa-search"></i> Find My Stuff</h1>
+      <button class="btn-add" onclick="openAddModal()">
+        <i class="fas fa-plus"></i> Add Item
+      </button>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="inventory-controls">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search by name, location, or description..."
+        oninput="renderItems()"
+        autocomplete="off"
+      />
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="all"        onclick="setFilter(this)">All</button>
+        <button class="filter-btn"        data-filter="food"       onclick="setFilter(this)"><i class="fas fa-utensils"></i> Food</button>
+        <button class="filter-btn"        data-filter="medicine"   onclick="setFilter(this)"><i class="fas fa-pills"></i> Medicine</button>
+        <button class="filter-btn"        data-filter="cleaning"   onclick="setFilter(this)"><i class="fas fa-spray-can"></i> Cleaning</button>
+        <button class="filter-btn"        data-filter="electronics" onclick="setFilter(this)"><i class="fas fa-plug"></i> Electronics</button>
+        <button class="filter-btn"        data-filter="general"    onclick="setFilter(this)"><i class="fas fa-box"></i> General</button>
+      </div>
+    </div>
+
+    <!-- Item Grid -->
+    <div id="itemGrid" class="item-grid"></div>
+
+  </main>
+
+  <!-- ── Add / Edit Modal ─────────────────────────────────── -->
+  <div id="itemModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Item</h2>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <form id="itemForm" onsubmit="submitItem(event)">
+
+        <div class="form-group">
+          <label for="f-name">Name <span class="required">*</span></label>
+          <input type="text" id="f-name" required placeholder="e.g. Hand Soap" />
+        </div>
+
+        <div class="form-group">
+          <label for="f-desc">Description</label>
+          <textarea id="f-desc" placeholder="Brief description..." rows="2"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-class">Classification <span class="required">*</span></label>
+            <select id="f-class" required onchange="toggleExpDate()">
+              <option value="">-- Select --</option>
+              <option value="food">Food</option>
+              <option value="medicine">Medicine</option>
+              <option value="cleaning">Cleaning</option>
+              <option value="electronics">Electronics</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="f-qty">Quantity <span class="required">*</span></label>
+            <input type="number" id="f-qty" required min="0" value="1" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-loc">Location <span class="required">*</span></label>
+          <input type="text" id="f-loc" required placeholder="e.g. Kitchen Cabinet, Top Shelf" />
+        </div>
+
+        <div class="form-group" id="expDateGroup" style="display:none">
+          <label for="f-exp">Expiration Date</label>
+          <input type="date" id="f-exp" />
+        </div>
+
+        <div class="form-group">
+          <label>Picture</label>
+          <div class="img-upload-area">
+            <label class="file-upload-btn" for="f-img">
+              <i class="fas fa-upload"></i> Choose Photo
+              <input type="file" id="f-img" accept="image/*" onchange="previewImage(event)" />
+            </label>
+            <span class="img-or">or</span>
+            <input type="text" id="f-img-url" placeholder="Paste image URL" oninput="previewUrl()" />
+          </div>
+          <div id="imgPreview" class="img-preview"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn-primary" id="submitBtn">Add Item</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Delete Confirm Modal ─────────────────────────────── -->
+  <div id="deleteModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h3>Delete Item</h3>
+        <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+      </div>
+      <p style="margin:16px 0">Are you sure you want to remove this item?</p>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" onclick="confirmDelete()"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/inventory.js"></script>
+  <script src="../js/nav.js" defer></script>
 </body>
 </html>

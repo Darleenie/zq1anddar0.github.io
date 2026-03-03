@@ -127,13 +127,14 @@
 
     /* style.css */
     .navbar {
-      background-color: #333;
+      background-color: #5C3D1E;
       position: fixed;
       top: 0;
       width: 100%;
       z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
-    
+
     .nav-container {
       display: flex;
       justify-content: center;
@@ -142,33 +143,44 @@
       max-width: 1200px;
       margin: 0 auto;
     }
-    
+
     .nav-menu {
       list-style: none;
       display: flex;
     }
-    
+
     .nav-menu li {
       margin-left: 20px;
     }
-    
+
     .nav-menu li a {
-      color: #fff;
+      color: #F5DEB3;
       text-decoration: none;
       font-size: 18px;
       transition: color 0.3s ease;
     }
-    
+
     .nav-menu li a:hover {
-      color: #FFCC99;
+      color: #FFE4B5;
     }
-    
+
     /* Toggle Button Styles */
     .menu-toggle {
       display: none;
       font-size: 24px;
-      color: #fff;
+      color: #F5DEB3;
       cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      /* iOS tap fix */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .menu-toggle:hover {
+      background: rgba(255,255,255,0.1);
     }
   
 /* ============================================================
@@ -757,7 +769,7 @@
       position: absolute;
       top: 60px;
       left: 0;
-      background-color: #333;
+      background-color: #4A2E12;
       width: 100%;
       flex-direction: column;
       align-items: center;

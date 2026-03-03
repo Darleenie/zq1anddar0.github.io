@@ -1,18 +1,15 @@
-fetch('../pages/nav.html')
-    .then(response => response.text())
-    .then(data => {
-      document.getElementById('nav-placeholder').innerHTML = data;
-    });
+fetch('/pages/nav.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('nav-placeholder').innerHTML = data;
 
+    // Attach toggle AFTER nav is injected into the DOM
+    const menuToggle = document.getElementById('mobile-menu');
+    const navMenu = document.getElementById('nav-menu');
 
-// nav.js
-document.addEventListener('DOMContentLoaded', () => {
-  const menuToggle = document.getElementById('mobile-menu');
-  const navMenu = document.getElementById('nav-menu');
-
-  if (menuToggle && navMenu) {
-    menuToggle.addEventListener('click', () => {
-      navMenu.classList.toggle('active');
-    });
-  }
-});
+    if (menuToggle && navMenu) {
+      menuToggle.addEventListener('click', () => {
+        navMenu.classList.toggle('active');
+      });
+    }
+  });

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Home</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <section>
+    <div id="nav-placeholder"></div>
+  </section>
+
+  <main class="sh-main">
+
+    <!-- Header -->
+    <div class="sh-header">
+      <h1><i class="fas fa-home"></i> Smart Home</h1>
+      <div class="sh-header-btns">
+        <button class="sh-btn-refresh" id="refreshBtn" onclick="loadDevices()" title="Refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="sh-btn-settings" onclick="openSettings()">
+          <i class="fas fa-cog"></i> Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- Auth banner (shown when no PAT or API error) -->
+    <div id="authBanner" class="sh-auth-banner" style="display:none">
+      <div class="sh-auth-banner-inner">
+        <i class="fas fa-key"></i>
+        <div>
+          <strong>Connect SmartThings</strong>
+          <p>Enter your SmartThings Personal Access Token to see and control your devices.</p>
+        </div>
+        <button class="sh-btn-connect" onclick="openSettings()">Connect</button>
+      </div>
+    </div>
+
+    <!-- Platform pills -->
+    <div class="sh-platform-row" id="platformRow" style="display:none">
+      <span class="sh-platform-badge sh-platform-st active" title="SmartThings connected">
+        <i class="fas fa-check-circle"></i> SmartThings
+      </span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
+        Aqara
+      </span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
+        Sengled
+      </span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
+        Google / Nest
+      </span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
+        Alexa
+      </span>
+    </div>
+
+    <!-- Room tabs -->
+    <div class="sh-room-tabs" id="roomTabs" style="display:none"></div>
+
+    <!-- Device grid -->
+    <div id="deviceArea" class="sh-device-area">
+      <div class="sh-empty">
+        <i class="fas fa-home"></i>
+        <p>Connect SmartThings to see your devices.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Settings Modal ──────────────────────────────────── -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h2><i class="fas fa-cog"></i> Smart Home Settings</h2>
+        <button class="modal-close" onclick="closeSettings()">&times;</button>
+      </div>
+
+      <div class="sh-settings-section">
+        <h3><i class="fas fa-plug" style="color:#1d8348"></i> SmartThings</h3>
+        <p class="sh-settings-desc">
+          Get your Personal Access Token from
+          <a href="https://account.smartthings.com/tokens" target="_blank" rel="noopener">
+            account.smartthings.com/tokens <i class="fas fa-external-link-alt" style="font-size:0.75rem"></i>
+          </a>.<br>
+          Create a token with <strong>Devices</strong> scope at minimum.
+        </p>
+        <div class="form-group">
+          <label for="stPATInput">Personal Access Token</label>
+          <div class="sh-token-row">
+            <input type="password" id="stPATInput" placeholder="Paste your token here..." autocomplete="off" />
+            <button class="sh-token-toggle" type="button" onclick="togglePATVis()" title="Show/hide">
+              <i class="fas fa-eye" id="patEyeIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="clearPAT()"><i class="fas fa-trash"></i> Clear Token</button>
+          <button class="btn-primary" onclick="savePAT()"><i class="fas fa-save"></i> Save &amp; Connect</button>
+        </div>
+      </div>
+
+      <div class="sh-settings-section sh-settings-other">
+        <h3><i class="fas fa-info-circle"></i> Other Platforms</h3>
+        <p class="sh-settings-desc">
+          <strong>Aqara, Sengled, Google Home/Nest, and Alexa</strong> don't have open device-control APIs for personal web apps.
+          The easiest way to control them here is to connect them to SmartThings — once connected,
+          they appear automatically in the device list above.
+        </p>
+        <ul class="sh-platform-list">
+          <li><i class="fas fa-circle-notch"></i> Aqara → SmartThings (via Matter or direct Zigbee hub integration)</li>
+          <li><i class="fas fa-circle-notch"></i> Sengled → SmartThings (via Sengled Hub or Zigbee integration)</li>
+          <li><i class="fas fa-circle-notch"></i> Google Nest → SmartThings (via Google Home cloud integration)</li>
+          <li><i class="fas fa-circle-notch"></i> Alexa routines → Set up in Alexa app, trigger from SmartThings events</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/smart-home.js"></script>
+  <script src="../js/nav.js" defer></script>
+</body>
+</html>

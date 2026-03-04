@@ -18,4 +18,39 @@
       <li><a href="/pages/smart-home.html">Smart Home</a></li>
       <li><a href="/pages/nfc-manage.html">NFC Tags</a></li>
     </ul>
-  </nav>
+    <div class="nav-auth" id="navAuth"></div>
+  </div>
+</nav>
+
+<!-- Login Modal (shared across all pages via nav injection) -->
+<div id="loginModal" class="modal hidden">
+  <div class="modal-content modal-sm">
+    <div class="modal-header">
+      <h3><i class="fas fa-lock"></i> Sign In</h3>
+      <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+    </div>
+    <div class="form-group" style="margin-top:16px">
+      <label>Who are you?</label>
+      <div class="room-selector">
+        <button type="button" class="room-sel-btn active" data-user="zq1" onclick="selectLoginUser(this)">
+          <i class="fas fa-user"></i> zq1
+        </button>
+        <button type="button" class="room-sel-btn" data-user="dar0" onclick="selectLoginUser(this)">
+          <i class="fas fa-user"></i> dar0
+        </button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password"
+             onkeydown="if(event.key==='Enter')submitLogin()" />
+    </div>
+    <div id="loginError" class="login-error" style="display:none"></div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeLoginModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitLogin()">
+        <i class="fas fa-sign-in-alt"></i> Sign In
+      </button>
+    </div>
+  </div>
+</div>

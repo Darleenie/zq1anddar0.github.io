@@ -29,7 +29,7 @@ async function stFetch(path, options = {}) {
 async function alexaFetch(path, options = {}) {
   const res = await fetch(`/api/alexa${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -431,6 +431,8 @@ function togglePATVis() {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  if (!isLoggedIn()) { openLoginModal(); return; }
+
   if (getPAT()) {
     loadDevices();
   } else {

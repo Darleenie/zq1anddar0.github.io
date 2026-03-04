@@ -145,6 +145,18 @@
           <input type="text" id="f-loc-detail" placeholder="e.g. Second shelf from the top, left side" />
         </div>
 
+        <div class="form-group" id="visibilityGroup" style="display:none">
+          <label>Visibility</label>
+          <div class="visibility-toggle">
+            <button type="button" class="vis-btn active" data-vis="public" onclick="selectVisibility(this)">
+              <i class="fas fa-globe"></i> Public
+            </button>
+            <button type="button" class="vis-btn" data-vis="private" onclick="selectVisibility(this)">
+              <i class="fas fa-lock"></i> Private (only me)
+            </button>
+          </div>
+        </div>
+
         <div class="form-group" id="expDateGroup" style="display:none">
           <label for="f-exp">Expiration Date</label>
           <input type="date" id="f-exp" />
@@ -377,6 +389,7 @@
     </div>
   </div>
 
+  <script src="../js/auth.js"></script>
   <script src="../js/inventory.js"></script>
   <script src="../js/nav.js" defer></script>
 </body>

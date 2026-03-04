@@ -17,7 +17,7 @@ let pendingUnregisterId = null;
 // ============================================================
 async function loadTags() {
   try {
-    const res = await fetch('/api/nfc');
+    const res = await fetch('/api/nfc', { headers: { ...authHeaders() } });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     allTags = await res.json();
     renderTags();
@@ -141,7 +141,7 @@ async function submitTagForm(e) {
       // Update existing
       const res = await fetch(`/api/nfc/${encodeURIComponent(editingTagId)}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
@@ -155,7 +155,7 @@ async function submitTagForm(e) {
       const tagId = crypto.randomUUID();
       const res = await fetch('/api/nfc', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ ...data, tagId }),
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
@@ -223,7 +223,7 @@ function closeUnregisterModal() {
 async function confirmUnregister() {
   if (!pendingUnregisterId) return;
   try {
-    const res = await fetch(`/api/nfc/${encodeURIComponent(pendingUnregisterId)}`, { method: 'DELETE' });
+    const res = await fetch(`/api/nfc/${encodeURIComponent(pendingUnregisterId)}`, { method: 'DELETE', headers: { ...authHeaders() } });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     allTags = allTags.filter(t => t.tagId !== pendingUnregisterId);
     closeUnregisterModal();
@@ -256,6 +256,7 @@ function showToast(msg, isError = false) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+  if (!isLoggedIn()) { openLoginModal(); return; }
   loadTags();
   document.getElementById('tagModal').addEventListener('click', e => {
     if (e.target === document.getElementById('tagModal')) closeTagModal();

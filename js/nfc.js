@@ -24,6 +24,8 @@ function showScreen(name) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!isLoggedIn()) { openLoginModal(); return; }
+
   const params  = new URLSearchParams(window.location.search);
   const tagId   = params.get('tag');
   currentTagId  = tagId;
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   showScreen('loading');
   try {
-    const res = await fetch(`/api/nfc/${encodeURIComponent(tagId)}`);
+    const res = await fetch(`/api/nfc/${encodeURIComponent(tagId)}`, { headers: { ...authHeaders() } });
     if (res.status === 404) { showScreen('not-found'); return; }
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     currentTag = await res.json();
@@ -100,7 +102,7 @@ async function submitStore(e) {
   try {
     const res = await fetch('/api/items', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(item),
     });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
@@ -126,7 +128,7 @@ async function loadItemsForAction(action) {
 
   try {
     const params = new URLSearchParams({ room: currentTag.room, location: currentTag.location });
-    const res = await fetch(`/api/items?${params}`);
+    const res = await fetch(`/api/items?${params}`, { headers: { ...authHeaders() } });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     const items = await res.json();
     renderItemList(items, action);
@@ -208,7 +210,7 @@ async function useItem(itemId, currentQty) {
   try {
     const res = await fetch(`/api/items/${itemId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ qty: newQty }),
     });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
@@ -251,7 +253,7 @@ async function doRemoveItem(itemId) {
   const card = document.getElementById(`icard-${itemId}`);
   const name = card.querySelector('strong').textContent;
   try {
-    const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE', headers: { ...authHeaders() } });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     card.style.transition = 'opacity 0.3s';
     card.style.opacity    = '0';
@@ -282,7 +284,7 @@ async function saveEditTag(e) {
   try {
     const res = await fetch(`/api/nfc/${encodeURIComponent(currentTagId)}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(updates),
     });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
@@ -301,7 +303,7 @@ function confirmUnregister() {
 
 async function doUnregister() {
   try {
-    const res = await fetch(`/api/nfc/${encodeURIComponent(currentTagId)}`, { method: 'DELETE' });
+    const res = await fetch(`/api/nfc/${encodeURIComponent(currentTagId)}`, { method: 'DELETE', headers: { ...authHeaders() } });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     window.location.href = '/pages/nfc-manage.html';
   } catch (err) {

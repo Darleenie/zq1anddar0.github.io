@@ -2,7 +2,7 @@
 // API CALLS
 // ============================================================
 async function fetchItems() {
-  const res = await fetch('/api/items');
+  const res = await fetch('/api/items', { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error('Failed to fetch items');
   return res.json();
 }
@@ -10,7 +10,7 @@ async function fetchItems() {
 async function apiAddItem(item) {
   const res = await fetch('/api/items', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(item),
   });
   if (!res.ok) throw new Error('Failed to add item');
@@ -20,14 +20,14 @@ async function apiAddItem(item) {
 async function apiUpdateItem(id, updates) {
   const res = await fetch(`/api/items/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error('Failed to update item');
 }
 
 async function apiDeleteItem(id) {
-  const res = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+  const res = await fetch(`/api/items/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
   if (!res.ok) throw new Error('Failed to delete item');
 }
 
@@ -54,6 +54,13 @@ const ROOM_COLORS = {
 
 let currentRoom = 'living';
 let selectedFormRoom = 'living';
+let selectedVisibility = 'public';
+
+function selectVisibility(btn) {
+  document.querySelectorAll('.vis-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedVisibility = btn.dataset.vis;
+}
 
 function setRoom(btn) {
   document.querySelectorAll('.room-tab').forEach(b => b.classList.remove('active'));
@@ -72,6 +79,14 @@ function selectFormRoom(btn) {
   document.querySelectorAll('.room-sel-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedFormRoom = btn.dataset.room;
+  // Update default visibility when room changes (only while adding, not editing)
+  if (!editingId && isLoggedIn()) {
+    const me = getUser().username;
+    selectedVisibility = (selectedFormRoom === me) ? 'private' : 'public';
+    document.querySelectorAll('.vis-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.vis === selectedVisibility);
+    });
+  }
 }
 
 // ============================================================
@@ -206,6 +221,9 @@ function renderItems() {
     const stateClass = item.missing ? 'card-missing'
       : nonMissingAlerts.some(a => a.type === 'danger') ? 'card-danger'
       : nonMissingAlerts.length > 0 ? 'card-warning' : '';
+    const privateBadge = item.visibility === 'private'
+      ? `<span class="item-private-badge"><i class="fas fa-lock"></i> Private</span>` : '';
+    const canEdit = isLoggedIn() && (!item.owner || item.owner === getUser()?.username);
 
     return `
       <div class="item-card ${stateClass}">
@@ -216,6 +234,7 @@ function renderItems() {
         <div class="card-body">
           <div class="card-top">
             <span class="class-badge" style="background:${color}">${capitalize(item.classification)}</span>
+            ${privateBadge}
             ${alertBadges}
           </div>
           <h3 class="item-name">${item.name}</h3>
@@ -225,9 +244,9 @@ function renderItems() {
           <p class="item-qty"><i class="fas fa-box"></i> Qty: <strong>${item.qty}</strong></p>
           ${expText}
           <div class="card-actions">
-            <button class="btn-icon" onclick="openEditModal('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
-            <button class="btn-icon btn-flag ${item.missing ? 'active' : ''}" onclick="toggleMissing('${id}')" title="${item.missing ? 'Mark as Found' : 'Report Missing'}"><i class="fas fa-flag"></i></button>
-            <button class="btn-icon btn-del" onclick="openDeleteModal('${id}')" title="Delete"><i class="fas fa-trash"></i></button>
+            ${canEdit ? `<button class="btn-icon" onclick="openEditModal('${id}')" title="Edit"><i class="fas fa-edit"></i></button>` : ''}
+            ${canEdit ? `<button class="btn-icon btn-flag ${item.missing ? 'active' : ''}" onclick="toggleMissing('${id}')" title="${item.missing ? 'Mark as Found' : 'Report Missing'}"><i class="fas fa-flag"></i></button>` : ''}
+            ${canEdit ? `<button class="btn-icon btn-del" onclick="openDeleteModal('${id}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         </div>
       </div>
@@ -266,6 +285,20 @@ function openAddModal() {
     b.classList.toggle('active', b.dataset.room === currentRoom);
   });
 
+  // Set default visibility: zq1/dar0 room → private (if logged in as that user), else public
+  const loggedIn = isLoggedIn();
+  const visGroup = document.getElementById('visibilityGroup');
+  if (visGroup) visGroup.style.display = loggedIn ? '' : 'none';
+  if (loggedIn) {
+    const me = getUser().username;
+    selectedVisibility = (selectedFormRoom === me) ? 'private' : 'public';
+    document.querySelectorAll('.vis-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.vis === selectedVisibility);
+    });
+  } else {
+    selectedVisibility = 'public';
+  }
+
   document.getElementById('itemModal').classList.remove('hidden');
 }
 
@@ -294,6 +327,17 @@ function openEditModal(id) {
   });
 
   toggleExpDate();
+
+  // Set visibility toggle state
+  const loggedIn = isLoggedIn();
+  const visGroup = document.getElementById('visibilityGroup');
+  if (visGroup) visGroup.style.display = loggedIn ? '' : 'none';
+  if (loggedIn) {
+    selectedVisibility = item.visibility || 'public';
+    document.querySelectorAll('.vis-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.vis === selectedVisibility);
+    });
+  }
 
   document.getElementById('imgPreview').innerHTML = item.image
     ? `<img src="${item.image}" alt="preview" />`
@@ -395,6 +439,7 @@ function buildItemFromForm() {
     qty:            parseInt(document.getElementById('f-qty').value),
     expirationDate: document.getElementById('f-exp').value || null,
     image:          pendingImageData || null,
+    visibility:     isLoggedIn() ? selectedVisibility : 'public',
   };
 }
 
@@ -1176,7 +1221,7 @@ async function confirmBotImport() {
   try {
     const res = await fetch('/api/items/bulk', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body:    JSON.stringify({ items: validItems }),
     });
     if (!res.ok) throw new Error('Server error');
@@ -1206,7 +1251,7 @@ async function confirmImport() {
   try {
     const res = await fetch('/api/items/bulk', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ items: validItems }),
     });
     if (!res.ok) throw new Error('Server error');

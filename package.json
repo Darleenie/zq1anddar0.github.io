@@ -8,7 +8,9 @@
     "dependencies": {
         "express": "^4.18.2",
         "mongodb": "^7.1.0",
-        "alexa-remote2": "^5.1.4"
+        "alexa-remote2": "^5.1.4",
+        "bcryptjs": "^2.4.3",
+        "jsonwebtoken": "^9.0.2"
     },
     "engines": {
         "node": "22.x"

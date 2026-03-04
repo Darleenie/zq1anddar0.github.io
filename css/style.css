@@ -20,7 +20,7 @@
     height: 50vh;
     text-align: center;
     background-color: #fff;
-    margin: 20px auto;
+    margin: 100px auto 20px;
     max-width: 800px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -234,7 +234,7 @@
 
 .inventory-main {
   max-width: 1000px;
-  margin: 80px auto 40px;
+  margin: 100px auto 40px;
   padding: 0 16px;
 }
 
@@ -551,7 +551,7 @@
   border-left: 4px solid #fb8c00;
   padding: 12px 20px;
   max-width: 1000px;
-  margin: 80px auto 0;
+  margin: 100px auto 0;
   border-radius: 0 8px 8px 0;
 }
 
@@ -1270,7 +1270,7 @@
     }
 
     .inventory-main {
-      margin-top: 70px;
+      margin-top: 90px;
       padding: 0 10px;
     }
 
@@ -1284,7 +1284,7 @@
     }
 
     .notification-banner {
-      margin-top: 70px;
+      margin-top: 90px;
     }
 
     .btn-bot-assist {
@@ -1501,7 +1501,7 @@
 
 .sh-main {
   max-width: 960px;
-  margin: 0 auto;
+  margin: 100px auto 0;
   padding: 24px 20px 60px;
 }
 
@@ -2009,7 +2009,7 @@
 /* Shared page layout */
 .nfc-main {
   max-width: 480px;
-  margin: 0 auto;
+  margin: 100px auto 0;
   padding: 24px 16px 80px;
 }
 

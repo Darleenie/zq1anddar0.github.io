@@ -55,6 +55,9 @@ async function seedUsers() {
     } else if (email && !existing.email) {
       // Backfill email if added later
       await db.collection('users').updateOne({ username }, { $set: { email } });
+      console.log(`Backfilled email for user: ${username}`);
+    } else {
+      console.log(`User ${username} exists, email in DB: ${existing.email || '(none)'}`);
     }
   }
 }

@@ -1348,3 +1348,145 @@
       font-size: 0.82rem;
     }
   }
+
+/* ── Duplicate Warning ──────────────────────────────────── */
+.dup-warning {
+  border: 2px solid #f4a93d;
+  border-radius: 10px;
+  background: #fffbf2;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.dup-warning-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #b36b00;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dup-item {
+  background: #fff;
+  border: 1px solid #e0d6c8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.dup-item-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+}
+
+.dup-item-info strong {
+  font-size: 0.95rem;
+}
+
+.dup-item-qty,
+.dup-item-loc {
+  color: #666;
+  font-size: 0.83rem;
+}
+
+.dup-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dup-btn {
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f4f4f4;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s;
+}
+
+.dup-btn:hover {
+  background: #e8e8e8;
+}
+
+.dup-btn-found {
+  border-color: #7B5EA7;
+  color: #7B5EA7;
+  background: #f5f0ff;
+}
+
+.dup-btn-found:hover {
+  background: #ede7f6;
+}
+
+.dup-btn-loc {
+  border-color: #1976d2;
+  color: #1976d2;
+  background: #e8f0fe;
+}
+
+.dup-btn-loc:hover {
+  background: #d2e3fc;
+}
+
+.dup-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: #333;
+}
+
+/* ── Toast ─────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #323232;
+  color: #fff;
+  padding: 11px 22px;
+  border-radius: 24px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast i {
+  color: #69f0ae;
+}
+
+.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

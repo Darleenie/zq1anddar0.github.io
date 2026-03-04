@@ -243,6 +243,7 @@ function capitalize(str) {
 // ============================================================
 let editingId = null;
 let pendingImageData = null;
+let pendingNewItem = null;
 
 function openAddModal() {
   editingId = null;
@@ -299,6 +300,8 @@ function closeModal() {
   document.getElementById('itemModal').classList.add('hidden');
   editingId = null;
   pendingImageData = null;
+  pendingNewItem = null;
+  hideDupWarning();
 }
 
 function toggleExpDate() {
@@ -375,9 +378,8 @@ function previewUrl() {
   }
 }
 
-async function submitItem(e) {
-  e.preventDefault();
-  const item = {
+function buildItemFromForm() {
+  return {
     name:           document.getElementById('f-name').value.trim(),
     description:    document.getElementById('f-desc').value.trim(),
     classification: document.getElementById('f-class').value,
@@ -388,11 +390,12 @@ async function submitItem(e) {
     expirationDate: document.getElementById('f-exp').value || null,
     image:          pendingImageData || null,
   };
+}
 
+async function doSubmitItem(item) {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.textContent = 'Saving...';
-
   try {
     if (editingId) {
       await apiUpdateItem(editingId, item);
@@ -411,6 +414,164 @@ async function submitItem(e) {
     btn.disabled = false;
     btn.textContent = editingId ? 'Save Changes' : 'Add Item';
   }
+}
+
+async function submitItem(e) {
+  e.preventDefault();
+  const item = buildItemFromForm();
+
+  // Only check for duplicates when adding (not editing)
+  if (!editingId) {
+    const dups = findPotentialDuplicates(item.name, item.room);
+    if (dups.length > 0) {
+      pendingNewItem = item;
+      showDupWarning(dups, item);
+      return;
+    }
+  }
+
+  await doSubmitItem(item);
+}
+
+// ============================================================
+// DUPLICATE CHECK
+// ============================================================
+function nameSimilarity(a, b) {
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+  if (!a || !b) return 0;
+  if (a === b) return 1.0;
+  if (a.includes(b) || b.includes(a)) return 0.85;
+  const stop = new Set(['the','a','an','of','and','or','in','on','at','for','to']);
+  const words1 = a.split(/\s+/).filter(w => w.length > 1 && !stop.has(w));
+  const words2 = b.split(/\s+/).filter(w => w.length > 1 && !stop.has(w));
+  if (!words1.length || !words2.length) return 0;
+  const set2 = new Set(words2);
+  return words1.filter(w => set2.has(w)).length / Math.max(words1.length, words2.length);
+}
+
+function findPotentialDuplicates(name, room) {
+  return allItems
+    .filter(i => (i.room || 'living') === room)
+    .map(i => ({ item: i, score: nameSimilarity(name, i.name || '') }))
+    .filter(r => r.score >= 0.6)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
+function showDupWarning(dups, newItem) {
+  document.getElementById('modalFormActions').style.display = 'none';
+  const warn = document.getElementById('dupWarning');
+  warn.style.display = '';
+
+  const list = document.getElementById('dupList');
+  list.innerHTML = dups.map(({ item }) => {
+    const locDiff = item.location && newItem.location &&
+      item.location.toLowerCase() !== newItem.location.toLowerCase();
+    return `
+      <div class="dup-item">
+        <div class="dup-item-info">
+          <strong>${item.name}</strong>
+          <span class="dup-item-qty"><i class="fas fa-box"></i> Qty: ${item.qty}</span>
+          <span class="dup-item-loc"><i class="fas fa-map-marker-alt"></i> ${item.location}</span>
+          ${item.missing ? '<span class="badge-missing"><i class="fas fa-question-circle"></i> Missing</span>' : ''}
+        </div>
+        <div class="dup-item-actions">
+          <button class="dup-btn" onclick="mergeWithExisting('${item._id}')">
+            <i class="fas fa-layer-group"></i> Merge (+${newItem.qty})
+          </button>
+          ${item.missing ? `<button class="dup-btn dup-btn-found" onclick="markExistingFound('${item._id}')">
+            <i class="fas fa-check-circle"></i> Mark Found
+          </button>` : ''}
+          ${locDiff ? `<button class="dup-btn dup-btn-loc" onclick="updateExistingLocation('${item._id}')">
+            <i class="fas fa-map-marker-alt"></i> Update Location
+          </button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function hideDupWarning() {
+  document.getElementById('dupWarning').style.display = 'none';
+  document.getElementById('modalFormActions').style.display = '';
+  pendingNewItem = null;
+}
+
+async function addItemAnyway() {
+  if (!pendingNewItem) return;
+  const item = pendingNewItem;
+  pendingNewItem = null;
+  hideDupWarning();
+  await doSubmitItem(item);
+}
+
+async function mergeWithExisting(existingId) {
+  if (!pendingNewItem) return;
+  const existing = allItems.find(i => String(i._id) === String(existingId));
+  if (!existing) return;
+  const newQty = (Number(existing.qty) || 0) + (Number(pendingNewItem.qty) || 0);
+  try {
+    await apiUpdateItem(existingId, { qty: newQty });
+    existing.qty = newQty;
+    closeModal();
+    renderItems();
+    renderNotifications();
+    showToast(`Merged — ${existing.name} qty is now ${newQty}`);
+  } catch (err) {
+    alert('Error merging: ' + err.message);
+  }
+}
+
+async function markExistingFound(existingId) {
+  const existing = allItems.find(i => String(i._id) === String(existingId));
+  if (!existing) return;
+  try {
+    await apiUpdateItem(existingId, { missing: false });
+    existing.missing = false;
+    closeModal();
+    renderItems();
+    renderNotifications();
+    showToast(`${existing.name} marked as found`);
+  } catch (err) {
+    alert('Error updating item: ' + err.message);
+  }
+}
+
+async function updateExistingLocation(existingId) {
+  if (!pendingNewItem) return;
+  const existing = allItems.find(i => String(i._id) === String(existingId));
+  if (!existing) return;
+  const updates = {
+    location: pendingNewItem.location,
+    locationDetail: pendingNewItem.locationDetail,
+    missing: false,
+  };
+  try {
+    await apiUpdateItem(existingId, updates);
+    Object.assign(existing, updates);
+    closeModal();
+    renderItems();
+    renderNotifications();
+    showToast(`${existing.name} location updated`);
+  } catch (err) {
+    alert('Error updating location: ' + err.message);
+  }
+}
+
+function showToast(msg) {
+  const existing = document.getElementById('appToast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'appToast';
+  toast.className = 'toast';
+  toast.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('toast-show'));
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 3000);
 }
 
 // ============================================================

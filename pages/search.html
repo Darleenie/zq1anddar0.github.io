@@ -155,7 +155,19 @@
           <div id="imgPreview" class="img-preview"></div>
         </div>
 
-        <div class="form-actions">
+        <!-- Duplicate warning (shown instead of form-actions when dup found) -->
+        <div id="dupWarning" class="dup-warning" style="display:none">
+          <div class="dup-warning-title"><i class="fas fa-clone"></i> Possible duplicate found</div>
+          <div id="dupList"></div>
+          <div class="dup-footer">
+            <button type="button" class="btn-secondary" onclick="addItemAnyway()">
+              <i class="fas fa-plus"></i> Add as Separate Item
+            </button>
+            <button type="button" class="btn-link" onclick="hideDupWarning()">← Back to form</button>
+          </div>
+        </div>
+
+        <div class="form-actions" id="modalFormActions">
           <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
           <button type="submit" class="btn-primary" id="submitBtn">Add Item</button>
         </div>

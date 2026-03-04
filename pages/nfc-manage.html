@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NFC Tags</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <section>
+    <div id="nav-placeholder"></div>
+  </section>
+
+  <main class="inventory-main">
+
+    <!-- Header -->
+    <div class="inventory-header">
+      <h1><i class="fas fa-tag"></i> NFC Tags</h1>
+      <div class="header-btns">
+        <button class="btn-add" onclick="openRegisterModal()">
+          <i class="fas fa-plus"></i> Register New Tag
+        </button>
+      </div>
+    </div>
+
+    <!-- Tag grid -->
+    <div id="tagGrid" class="nfc-tag-grid">
+      <div class="no-items">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading tags…</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Register / Edit Modal ──────────────────────────────── -->
+  <div id="tagModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="tagModalTitle">Register New Tag</h2>
+        <button class="modal-close" onclick="closeTagModal()">&times;</button>
+      </div>
+
+      <form onsubmit="submitTagForm(event)">
+        <div class="form-group">
+          <label for="t-label">Tag Label <span class="required">*</span></label>
+          <input type="text" id="t-label" required placeholder="e.g. Kitchen Cabinet Top Shelf" />
+        </div>
+
+        <div class="form-group">
+          <label>Room <span class="required">*</span></label>
+          <div class="room-selector" id="tagRoomSelector">
+            <button type="button" class="room-sel-btn active" data-room="living" onclick="selectTagRoom(this)">
+              <i class="fas fa-couch"></i> Living Room
+            </button>
+            <button type="button" class="room-sel-btn" data-room="zq1" onclick="selectTagRoom(this)">
+              <i class="fas fa-door-closed"></i> zq1's Room
+            </button>
+            <button type="button" class="room-sel-btn" data-room="dar0" onclick="selectTagRoom(this)">
+              <i class="fas fa-door-closed"></i> dar0's Room
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="t-loc">Location <span class="required">*</span></label>
+          <input type="text" id="t-loc" required placeholder="e.g. Kitchen Cabinet" />
+        </div>
+
+        <div class="form-group">
+          <label for="t-loc-detail">Location Detail</label>
+          <input type="text" id="t-loc-detail" placeholder="e.g. Top shelf, left side" />
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeTagModal()">Cancel</button>
+          <button type="submit" class="btn-primary" id="tagSaveBtn">Register</button>
+        </div>
+      </form>
+
+      <!-- URL display (shown after registration) -->
+      <div id="tagURLSection" style="display:none">
+        <p class="nfc-url-label"><i class="fas fa-check-circle" style="color:#1d8348"></i> Tag registered! Copy this URL into your NFC writing app:</p>
+        <div class="nfc-url-box">
+          <code id="tagURLText"></code>
+          <button class="nfc-url-copy-btn" onclick="copyTagURL()" id="copyURLBtn">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+        </div>
+        <div class="form-actions" style="margin-top:12px">
+          <button class="btn-primary" onclick="closeTagModal()">Done</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Unregister Confirm Modal ──────────────────────────── -->
+  <div id="unregisterModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h3>Unregister Tag</h3>
+        <button class="modal-close" onclick="closeUnregisterModal()">&times;</button>
+      </div>
+      <p style="margin:16px 0">Remove registration for <strong id="unregisterTagLabel"></strong>?
+        The physical NFC tag won't be erased, but the URL will no longer work.
+      </p>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="closeUnregisterModal()">Cancel</button>
+        <button class="btn-danger" onclick="confirmUnregister()">
+          <i class="fas fa-unlink"></i> Unregister
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/nfc-manage.js"></script>
+  <script src="../js/nav.js" defer></script>
+</body>
+</html>

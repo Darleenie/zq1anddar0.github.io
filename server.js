@@ -18,10 +18,13 @@ async function connectDB() {
   console.log('Connected to MongoDB');
 }
 
-// ── GET all items ──────────────────────────────────────────
-app.get('/api/items', async (_req, res) => {
+// ── GET all items (optional ?room= and ?location= filters) ─
+app.get('/api/items', async (req, res) => {
   try {
-    const items = await db.collection('items').find().toArray();
+    const filter = {};
+    if (req.query.room)     filter.room     = req.query.room;
+    if (req.query.location) filter.location = req.query.location;
+    const items = await db.collection('items').find(filter).toArray();
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -152,6 +155,66 @@ app.post('/api/alexa/devices/:entityId/command', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
   });
+});
+
+// ============================================================
+// NFC TAGS
+// ============================================================
+
+// ── GET all tags ───────────────────────────────────────────
+app.get('/api/nfc', async (_req, res) => {
+  try {
+    const tags = await db.collection('nfc_tags').find().toArray();
+    res.json(tags);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET single tag ─────────────────────────────────────────
+app.get('/api/nfc/:tagId', async (req, res) => {
+  try {
+    const tag = await db.collection('nfc_tags').findOne({ tagId: req.params.tagId });
+    if (!tag) return res.status(404).json({ error: 'Not found' });
+    res.json(tag);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST register tag ──────────────────────────────────────
+app.post('/api/nfc', async (req, res) => {
+  try {
+    const tag = { ...req.body, registeredAt: new Date().toISOString() };
+    await db.collection('nfc_tags').insertOne(tag);
+    res.json(tag);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PUT update tag ─────────────────────────────────────────
+app.put('/api/nfc/:tagId', async (req, res) => {
+  try {
+    const { _id, tagId, registeredAt, ...updates } = req.body;
+    await db.collection('nfc_tags').updateOne(
+      { tagId: req.params.tagId },
+      { $set: updates }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE tag ─────────────────────────────────────────────
+app.delete('/api/nfc/:tagId', async (req, res) => {
+  try {
+    await db.collection('nfc_tags').deleteOne({ tagId: req.params.tagId });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Catch-all (must be AFTER API routes) ──────────────────

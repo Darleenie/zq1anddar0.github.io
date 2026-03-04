@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NFC Quick Action</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <section>
+    <div id="nav-placeholder"></div>
+  </section>
+
+  <main class="nfc-main">
+
+    <!-- Loading -->
+    <div id="screen-loading" class="nfc-screen">
+      <div class="nfc-center">
+        <i class="fas fa-spinner fa-spin nfc-big-icon"></i>
+        <p>Looking up tag…</p>
+      </div>
+    </div>
+
+    <!-- Not found -->
+    <div id="screen-not-found" class="nfc-screen" style="display:none">
+      <div class="nfc-center">
+        <i class="fas fa-tag nfc-big-icon" style="color:#ccc"></i>
+        <h2>Tag not set up</h2>
+        <p>This NFC tag hasn't been registered yet, or the URL is invalid.</p>
+        <a href="/pages/nfc-manage.html" class="btn-primary nfc-link-btn">
+          <i class="fas fa-list"></i> Manage NFC Tags
+        </a>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div id="screen-actions" class="nfc-screen" style="display:none">
+      <div class="nfc-location-card">
+        <span class="nfc-room-badge" id="actionRoomBadge"></span>
+        <h2 id="actionLabel"></h2>
+        <p class="nfc-loc-text" id="actionLocation"></p>
+        <p class="nfc-loc-detail" id="actionLocationDetail"></p>
+      </div>
+      <div class="nfc-actions-grid">
+        <button class="nfc-action-btn nfc-btn-store" onclick="showScreen('store')">
+          <i class="fas fa-plus-circle"></i>
+          <span>Store</span>
+          <small>Add item here</small>
+        </button>
+        <button class="nfc-action-btn nfc-btn-use" onclick="loadItemsForAction('use')">
+          <i class="fas fa-minus-circle"></i>
+          <span>Use</span>
+          <small>Consume qty</small>
+        </button>
+        <button class="nfc-action-btn nfc-btn-remove" onclick="loadItemsForAction('remove')">
+          <i class="fas fa-trash-alt"></i>
+          <span>Remove</span>
+          <small>Delete item</small>
+        </button>
+      </div>
+      <div class="nfc-footer-links">
+        <button class="btn-link" onclick="showScreen('edit-tag')"><i class="fas fa-cog"></i> Edit Tag Registration</button>
+      </div>
+    </div>
+
+    <!-- Store (quick add) -->
+    <div id="screen-store" class="nfc-screen" style="display:none">
+      <div class="nfc-screen-header">
+        <button class="nfc-back-btn" onclick="showScreen('actions')"><i class="fas fa-arrow-left"></i></button>
+        <h2>Store Item</h2>
+      </div>
+      <div class="nfc-locked-info" id="storeLockInfo"></div>
+      <form onsubmit="submitStore(event)">
+        <div class="form-group">
+          <label for="s-name">Name <span class="required">*</span></label>
+          <input type="text" id="s-name" required placeholder="e.g. Hand Soap" autocomplete="off" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="s-class">Type <span class="required">*</span></label>
+            <select id="s-class" required onchange="toggleStoreExpiry()">
+              <option value="">-- Select --</option>
+              <option value="food">Food</option>
+              <option value="medicine">Medicine</option>
+              <option value="cleaning">Cleaning</option>
+              <option value="electronics">Electronics</option>
+              <option value="general">General</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="s-qty">Qty <span class="required">*</span></label>
+            <input type="number" id="s-qty" required min="1" value="1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="s-desc">Description</label>
+          <input type="text" id="s-desc" placeholder="Optional" />
+        </div>
+        <div class="form-group" id="s-exp-group" style="display:none">
+          <label for="s-exp">Expiry Date</label>
+          <input type="date" id="s-exp" />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="showScreen('actions')">Cancel</button>
+          <button type="submit" class="btn-primary" id="storeSaveBtn">
+            <i class="fas fa-plus"></i> Add Item
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Use / Remove item list -->
+    <div id="screen-items" class="nfc-screen" style="display:none">
+      <div class="nfc-screen-header">
+        <button class="nfc-back-btn" onclick="showScreen('actions')"><i class="fas fa-arrow-left"></i></button>
+        <h2 id="itemsScreenTitle"></h2>
+      </div>
+      <div id="nfcItemList"></div>
+    </div>
+
+    <!-- Edit tag registration -->
+    <div id="screen-edit-tag" class="nfc-screen" style="display:none">
+      <div class="nfc-screen-header">
+        <button class="nfc-back-btn" onclick="showScreen('actions')"><i class="fas fa-arrow-left"></i></button>
+        <h2>Edit Tag</h2>
+      </div>
+      <form onsubmit="saveEditTag(event)">
+        <div class="form-group">
+          <label for="et-label">Label <span class="required">*</span></label>
+          <input type="text" id="et-label" required placeholder="e.g. Kitchen Cabinet Top Shelf" />
+        </div>
+        <div class="form-group">
+          <label>Room <span class="required">*</span></label>
+          <div class="room-selector" id="etRoomSelector">
+            <button type="button" class="room-sel-btn" data-room="living" onclick="selectEditRoom(this)">
+              <i class="fas fa-couch"></i> Living Room
+            </button>
+            <button type="button" class="room-sel-btn" data-room="zq1" onclick="selectEditRoom(this)">
+              <i class="fas fa-door-closed"></i> zq1's Room
+            </button>
+            <button type="button" class="room-sel-btn" data-room="dar0" onclick="selectEditRoom(this)">
+              <i class="fas fa-door-closed"></i> dar0's Room
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="et-loc">Location <span class="required">*</span></label>
+          <input type="text" id="et-loc" required placeholder="e.g. Kitchen Cabinet" />
+        </div>
+        <div class="form-group">
+          <label for="et-loc-detail">Location Detail</label>
+          <input type="text" id="et-loc-detail" placeholder="e.g. Top shelf, left side" />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-danger" onclick="confirmUnregister()">
+            <i class="fas fa-unlink"></i> Unregister
+          </button>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-save"></i> Save
+          </button>
+        </div>
+      </form>
+      <div id="unregisterConfirm" class="nfc-inline-confirm" style="display:none">
+        <span>Unregister this tag?</span>
+        <button class="btn-danger" onclick="doUnregister()">Yes, remove</button>
+        <button class="btn-secondary" onclick="document.getElementById('unregisterConfirm').style.display='none'">Cancel</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../js/nfc.js"></script>
+  <script src="../js/nav.js" defer></script>
+</body>
+</html>

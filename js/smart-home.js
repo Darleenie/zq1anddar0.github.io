@@ -112,7 +112,7 @@ async function loadSTDevices() {
   const locationId = locations[0].locationId;
 
   const [{ items: rooms }, { items: devices }] = await Promise.all([
-    stFetch(`/rooms?locationId=${locationId}`),
+    stFetch(`/locations/${locationId}/rooms`),
     stFetch(`/devices?locationId=${locationId}`),
   ]);
 

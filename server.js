@@ -62,6 +62,17 @@ app.delete('/api/items/:id', async (req, res) => {
   }
 });
 
+// ── POST bulk import ───────────────────────────────────────
+app.post('/api/items/bulk', async (req, res) => {
+  try {
+    const items = req.body.items.map(item => ({ ...item, addedDate: new Date().toISOString() }));
+    const result = await db.collection('items').insertMany(items);
+    res.json({ inserted: result.insertedCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Catch-all (must be AFTER API routes) ──────────────────
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 

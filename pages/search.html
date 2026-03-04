@@ -21,9 +21,14 @@
     <!-- Header -->
     <div class="inventory-header">
       <h1><i class="fas fa-search"></i> Find My Stuff</h1>
-      <button class="btn-add" onclick="openAddModal()">
-        <i class="fas fa-plus"></i> Add Item
-      </button>
+      <div class="header-btns">
+        <button class="btn-import" onclick="openImportModal()">
+          <i class="fas fa-file-csv"></i> Import CSV
+        </button>
+        <button class="btn-add" onclick="openAddModal()">
+          <i class="fas fa-plus"></i> Add Item
+        </button>
+      </div>
     </div>
 
     <!-- Search & Filters -->
@@ -133,6 +138,57 @@
         <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
         <button class="btn-danger" onclick="confirmDelete()"><i class="fas fa-trash"></i> Delete</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Import CSV Modal ──────────────────────────────────── -->
+  <div id="importModal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h2><i class="fas fa-file-csv"></i> Import from CSV</h2>
+        <button class="modal-close" onclick="closeImportModal()">&times;</button>
+      </div>
+
+      <!-- Step 1: instructions + file pick -->
+      <div id="importStep1">
+        <div class="import-instructions">
+          <p><strong>How it works:</strong></p>
+          <ol>
+            <li>Download the template and open it in <strong>Google Sheets</strong> or <strong>Excel</strong></li>
+            <li>Fill in your items — one row per item</li>
+            <li>Save as <strong>.csv</strong> and upload it here</li>
+          </ol>
+          <p class="import-note">
+            <i class="fas fa-info-circle"></i>
+            Valid classifications: <code>food</code>, <code>medicine</code>, <code>cleaning</code>, <code>electronics</code>, <code>general</code><br>
+            Expiration date format: <code>YYYY-MM-DD</code> (leave blank if none)
+          </p>
+        </div>
+        <div class="import-step1-btns">
+          <button class="btn-secondary" onclick="downloadTemplate()">
+            <i class="fas fa-download"></i> Download Template
+          </button>
+          <label class="btn-add" style="cursor:pointer">
+            <i class="fas fa-upload"></i> Choose CSV File
+            <input type="file" id="csvFileInput" accept=".csv,.txt" onchange="handleCSVFile(event)" style="display:none" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 2: preview table -->
+      <div id="importStep2" style="display:none">
+        <p id="importSummary" class="import-summary"></p>
+        <div class="csv-preview-wrap">
+          <table class="csv-preview-table" id="csvPreviewTable"></table>
+        </div>
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn-secondary" onclick="resetImport()"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-primary" id="confirmImportBtn" onclick="confirmImport()">
+            <i class="fas fa-database"></i> <span id="confirmImportLabel">Import</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 

@@ -473,6 +473,33 @@
   color: #e53935;
 }
 
+/* Header button group */
+.header-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Import CSV button */
+.btn-import {
+  background: #fff;
+  color: #5C3D1E;
+  border: 2px solid #5C3D1E;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-import:hover {
+  background: #5C3D1E;
+  color: #fff;
+}
+
 /* Add Item button */
 .btn-add {
   background: #333;
@@ -756,6 +783,95 @@
 .btn-danger:hover {
   background: #c62828;
 }
+
+/* ============================================================
+   CSV IMPORT MODAL
+   ============================================================ */
+
+.modal-wide {
+  max-width: 780px;
+}
+
+.import-instructions {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  font-size: 0.9em;
+  line-height: 1.7;
+}
+
+.import-instructions ol {
+  margin: 6px 0 10px 18px;
+}
+
+.import-note {
+  color: #666;
+  margin-top: 8px;
+}
+
+.import-note code {
+  background: #f0f0f0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.88em;
+}
+
+.import-step1-btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.import-summary {
+  font-size: 0.92em;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.csv-ok    { color: #2e7d32; }
+.csv-warn  { color: #e65100; }
+.csv-skip  { color: #c62828; }
+
+.csv-preview-wrap {
+  overflow-x: auto;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.csv-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82em;
+}
+
+.csv-preview-table thead th {
+  background: #5C3D1E;
+  color: #F5DEB3;
+  padding: 8px 10px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+
+.csv-preview-table tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.csv-preview-table .row-ok   { background: #fff; }
+.csv-preview-table .row-warn { background: #fff8e1; }
+.csv-preview-table .row-error{ background: #fdecea; opacity: 0.7; }
+
+.status-cell { white-space: nowrap; }
 
 /* ============================================================
    RESPONSIVE

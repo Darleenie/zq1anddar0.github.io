@@ -381,4 +381,223 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('deleteModal').addEventListener('click', e => {
     if (e.target === document.getElementById('deleteModal')) closeDeleteModal();
   });
+  document.getElementById('importModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('importModal')) closeImportModal();
+  });
 });
+
+// ============================================================
+// CSV IMPORT
+// ============================================================
+const VALID_CLASSES = ['food', 'medicine', 'cleaning', 'electronics', 'general'];
+let parsedCSVRows = [];
+
+// ── Template download ──────────────────────────────────────
+function downloadTemplate() {
+  const rows = [
+    ['name', 'classification', 'location', 'qty', 'expirationDate', 'description'],
+    ['Milk', 'food', 'Fridge Top Shelf', '2', '2026-06-01', ''],
+    ['Advil', 'medicine', 'Bathroom Cabinet', '20', '2026-12-01', 'Pain reliever 200mg'],
+    ['Dish Soap', 'cleaning', 'Under Kitchen Sink', '1', '', ''],
+    ['Phone Charger', 'electronics', 'Bedroom Desk', '1', '', 'USB-C'],
+    ['Scissors', 'general', 'Office Drawer', '2', '', ''],
+  ];
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'inventory_template.csv';
+  a.click();
+}
+
+// ── Modal open/close ───────────────────────────────────────
+function openImportModal() {
+  resetImport();
+  document.getElementById('importModal').classList.remove('hidden');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.add('hidden');
+  resetImport();
+}
+
+function resetImport() {
+  parsedCSVRows = [];
+  document.getElementById('importStep1').style.display = '';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvPreviewTable').innerHTML = '';
+}
+
+// ── CSV parsing ────────────────────────────────────────────
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/^"|"$/g, '').trim());
+
+  return lines.slice(1)
+    .filter(line => line.trim())
+    .map(line => {
+      const values = parseCSVLine(line);
+      const row = {};
+      headers.forEach((h, i) => { row[h] = (values[i] || '').replace(/^"|"$/g, '').trim(); });
+      return row;
+    });
+}
+
+function validateRow(row) {
+  const errors = [];
+  const warnings = [];
+
+  if (!row.name)     errors.push('Name is required');
+  if (!row.location) errors.push('Location is required');
+
+  let classification = (row.classification || '').toLowerCase();
+  if (!VALID_CLASSES.includes(classification)) {
+    warnings.push(`"${row.classification || ''}" → defaulted to "general"`);
+    classification = 'general';
+  }
+
+  let qty = parseInt(row.qty);
+  if (isNaN(qty) || qty < 0) {
+    warnings.push('Invalid qty → defaulted to 1');
+    qty = 1;
+  }
+
+  let expirationDate = row.expirationdate || row.expirationDate || '';
+  if (expirationDate && !/^\d{4}-\d{2}-\d{2}$/.test(expirationDate)) {
+    warnings.push('Invalid date format (use YYYY-MM-DD) → cleared');
+    expirationDate = '';
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    item: {
+      name:           row.name || '',
+      classification,
+      location:       row.location || '',
+      qty,
+      expirationDate: expirationDate || null,
+      description:    row.description || '',
+      image:          null,
+    },
+  };
+}
+
+// ── File handler + preview ─────────────────────────────────
+function handleCSVFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const raw = parseCSV(e.target.result);
+    if (raw.length === 0) {
+      alert('No data rows found. Make sure the file has a header row and at least one item row.');
+      return;
+    }
+    parsedCSVRows = raw.map(validateRow);
+    renderCSVPreview();
+  };
+  reader.readAsText(file);
+}
+
+function renderCSVPreview() {
+  const validCount   = parsedCSVRows.filter(r => r.valid).length;
+  const invalidCount = parsedCSVRows.length - validCount;
+
+  const summary = document.getElementById('importSummary');
+  summary.innerHTML =
+    `<span class="csv-ok"><i class="fas fa-check-circle"></i> ${validCount} item${validCount !== 1 ? 's' : ''} ready</span>` +
+    (invalidCount > 0 ? `&nbsp;&nbsp;<span class="csv-skip"><i class="fas fa-times-circle"></i> ${invalidCount} row${invalidCount !== 1 ? 's' : ''} will be skipped (missing name or location)</span>` : '');
+
+  document.getElementById('confirmImportLabel').textContent = `Import ${validCount} Item${validCount !== 1 ? 's' : ''}`;
+  document.getElementById('confirmImportBtn').disabled = validCount === 0;
+
+  const table = document.getElementById('csvPreviewTable');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Classification</th>
+        <th>Location</th>
+        <th>Qty</th>
+        <th>Expiration</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${parsedCSVRows.map((r, i) => `
+        <tr class="${r.valid ? (r.warnings.length ? 'row-warn' : 'row-ok') : 'row-error'}">
+          <td>${i + 1}</td>
+          <td>${r.item.name || '<em>missing</em>'}</td>
+          <td>${r.item.classification}</td>
+          <td>${r.item.location || '<em>missing</em>'}</td>
+          <td>${r.item.qty}</td>
+          <td>${r.item.expirationDate || '—'}</td>
+          <td class="status-cell">
+            ${r.errors.length   ? `<span class="csv-skip" title="${r.errors.join(', ')}"><i class="fas fa-times-circle"></i> Skip</span>` : ''}
+            ${r.warnings.length ? `<span class="csv-warn" title="${r.warnings.join(', ')}"><i class="fas fa-exclamation-triangle"></i> Fixed</span>` : ''}
+            ${!r.errors.length && !r.warnings.length ? '<span class="csv-ok"><i class="fas fa-check-circle"></i></span>' : ''}
+          </td>
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+
+  document.getElementById('importStep1').style.display = 'none';
+  document.getElementById('importStep2').style.display = '';
+}
+
+// ── Confirm & bulk POST ────────────────────────────────────
+async function confirmImport() {
+  const validItems = parsedCSVRows.filter(r => r.valid).map(r => r.item);
+  if (validItems.length === 0) return;
+
+  const btn = document.getElementById('confirmImportBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+
+  try {
+    const res = await fetch('/api/items/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: validItems }),
+    });
+    if (!res.ok) throw new Error('Server error');
+    const { inserted } = await res.json();
+
+    closeImportModal();
+    allItems = await fetchItems();
+    renderItems();
+    renderNotifications();
+    alert(`Successfully imported ${inserted} item${inserted !== 1 ? 's' : ''}!`);
+  } catch (err) {
+    alert('Import failed: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-database"></i> <span id="confirmImportLabel">Import ${validItems.length} Items</span>`;
+  }
+}

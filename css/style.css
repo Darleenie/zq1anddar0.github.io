@@ -2525,6 +2525,18 @@
 .nav-logout-btn { background: none; border: none; color: #aaa; cursor: pointer; padding: 0 2px; }
 .nav-logout-btn:hover { color: #fff; }
 
+/* Forgot password link */
+.nav-forgot-btn {
+  background: none;
+  border: none;
+  color: #7986cb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+.nav-forgot-btn:hover { color: #9fa8da; }
+
 /* Login modal error */
 .login-error {
   color: #e57373;

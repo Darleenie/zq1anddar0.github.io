@@ -10,7 +10,8 @@
         "mongodb": "^7.1.0",
         "alexa-remote2": "^5.1.4",
         "bcryptjs": "^2.4.3",
-        "jsonwebtoken": "^9.0.2"
+        "jsonwebtoken": "^9.0.2",
+        "nodemailer": "^6.9.0"
     },
     "engines": {
         "node": "22.x"

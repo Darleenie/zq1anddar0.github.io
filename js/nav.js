@@ -90,6 +90,38 @@ async function submitLogin() {
   }
 }
 
+// ── Forgot password ─────────────────────────────────────────
+function showForgotForm() {
+  document.getElementById('forgotForm').style.display = '';
+  document.getElementById('forgotStatus').innerHTML = '';
+  document.getElementById('forgotSendBtn').disabled = false;
+}
+
+function hideForgotForm() {
+  document.getElementById('forgotForm').style.display = 'none';
+}
+
+async function submitForgot() {
+  const btn    = document.getElementById('forgotSendBtn');
+  const status = document.getElementById('forgotStatus');
+  btn.disabled = true;
+  status.innerHTML = '';
+  try {
+    const res = await fetch('/api/auth/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: _loginSelectedUser }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+    status.innerHTML = `<p style="color:#66bb6a;font-size:0.85rem">
+      <i class="fas fa-check-circle"></i> Link sent! Check ${_loginSelectedUser}'s email.
+    </p>`;
+  } catch (e) {
+    status.innerHTML = `<p class="login-error">${e.message}</p>`;
+    btn.disabled = false;
+  }
+}
+
 // Close modal on backdrop click
 document.addEventListener('click', e => {
   const modal = document.getElementById('loginModal');

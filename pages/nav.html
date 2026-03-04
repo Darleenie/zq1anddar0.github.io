@@ -52,5 +52,22 @@
         <i class="fas fa-sign-in-alt"></i> Sign In
       </button>
     </div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="nav-forgot-btn" onclick="showForgotForm()">Forgot password?</button>
+    </div>
+
+    <!-- Forgot password sub-form (hidden by default) -->
+    <div id="forgotForm" style="display:none;margin-top:12px;border-top:1px solid #2a2a2a;padding-top:14px">
+      <p style="font-size:0.82rem;color:#aaa;margin-bottom:8px">
+        We'll send a reset link to your registered email.
+      </p>
+      <div id="forgotStatus"></div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="hideForgotForm()">Back</button>
+        <button class="btn-primary" id="forgotSendBtn" onclick="submitForgot()">
+          <i class="fas fa-paper-plane"></i> Send link
+        </button>
+      </div>
+    </div>
   </div>
 </div>

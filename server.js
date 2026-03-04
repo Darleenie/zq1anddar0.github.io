@@ -1,15 +1,27 @@
 const express  = require('express');
 const path     = require('path');
+const crypto   = require('crypto');
 const { MongoClient, ObjectId } = require('mongodb');
 const AlexaRemote = require('alexa-remote2');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+
+function getMailTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
 
 let db;
 
@@ -25,12 +37,24 @@ async function connectDB() {
 
 // Seed zq1 and dar0 users from env vars on first run
 async function seedUsers() {
-  for (const [username, envKey] of [['zq1','ZQ1_PASSWORD'],['dar0','DAR0_PASSWORD']]) {
-    const pw = process.env[envKey];
-    if (!pw) continue;
-    if (!await db.collection('users').findOne({ username })) {
-      await db.collection('users').insertOne({ username, passwordHash: bcrypt.hashSync(pw, 10) });
+  for (const [username, pwKey, emailKey] of [
+    ['zq1',  'ZQ1_PASSWORD',  'ZQ1_EMAIL'],
+    ['dar0', 'DAR0_PASSWORD', 'DAR0_EMAIL'],
+  ]) {
+    const pw    = process.env[pwKey];
+    const email = process.env[emailKey];
+    const existing = await db.collection('users').findOne({ username });
+    if (!existing) {
+      if (!pw) continue;
+      await db.collection('users').insertOne({
+        username,
+        passwordHash: bcrypt.hashSync(pw, 10),
+        email: email || null,
+      });
       console.log(`Seeded user: ${username}`);
+    } else if (email && !existing.email) {
+      // Backfill email if added later
+      await db.collection('users').updateOne({ username }, { $set: { email } });
     }
   }
 }
@@ -74,6 +98,76 @@ app.post('/api/auth/login', async (req, res) => {
 // GET /api/auth/me
 app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ username: req.user.username });
+});
+
+// POST /api/auth/forgot  — send password-reset email
+app.post('/api/auth/forgot', async (req, res) => {
+  try {
+    const { username } = req.body;
+    const user = await db.collection('users').findOne({ username });
+    // Always respond OK to avoid username enumeration
+    if (!user || !user.email) return res.json({ ok: true });
+
+    const rawToken  = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expires   = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await db.collection('users').updateOne(
+      { username },
+      { $set: { resetToken: tokenHash, resetExpires: expires } }
+    );
+
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const link   = `${appUrl}/pages/reset-password.html?token=${rawToken}`;
+
+    const transporter = getMailTransporter();
+    if (!transporter) {
+      console.log(`[DEV] Password reset link for ${username}: ${link}`);
+    } else {
+      await transporter.sendMail({
+        to:      user.email,
+        from:    process.env.GMAIL_USER,
+        subject: 'Set your password — zq1 & dar0 Home',
+        html: `
+          <p>Hi ${username},</p>
+          <p>Click the link below to set your password. It expires in 1 hour.</p>
+          <p><a href="${link}">${link}</a></p>
+          <p>If you didn't request this, ignore this email.</p>
+        `,
+      });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/reset  — validate token and save new password
+app.post('/api/auth/reset', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword || newPassword.length < 6)
+      return res.status(400).json({ error: 'Invalid request' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await db.collection('users').findOne({
+      resetToken:   tokenHash,
+      resetExpires: { $gt: new Date() },
+    });
+    if (!user) return res.status(400).json({ error: 'Link is invalid or has expired' });
+
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      {
+        $set:   { passwordHash: bcrypt.hashSync(newPassword, 10) },
+        $unset: { resetToken: '', resetExpires: '' },
+      }
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ============================================================

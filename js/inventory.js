@@ -1,32 +1,40 @@
 // ============================================================
-// STORAGE
+// API CALLS
 // ============================================================
-function getItems() {
-  return JSON.parse(localStorage.getItem('inventoryItems') || '[]');
+async function fetchItems() {
+  const res = await fetch('/api/items');
+  if (!res.ok) throw new Error('Failed to fetch items');
+  return res.json();
 }
 
-function saveItems(items) {
-  localStorage.setItem('inventoryItems', JSON.stringify(items));
+async function apiAddItem(item) {
+  const res = await fetch('/api/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new Error('Failed to add item');
+  return res.json();
+}
+
+async function apiUpdateItem(id, updates) {
+  const res = await fetch(`/api/items/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to update item');
+}
+
+async function apiDeleteItem(id) {
+  const res = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete item');
 }
 
 // ============================================================
-// CRUD
+// IN-MEMORY CACHE
 // ============================================================
-function addItem(item) {
-  const items = getItems();
-  item.id = Date.now();
-  item.addedDate = new Date().toISOString();
-  items.push(item);
-  saveItems(items);
-}
-
-function deleteItemById(id) {
-  saveItems(getItems().filter(i => i.id !== id));
-}
-
-function updateItemById(id, updates) {
-  saveItems(getItems().map(i => i.id === id ? { ...i, ...updates } : i));
-}
+let allItems = [];
 
 // ============================================================
 // NOTIFICATION LOGIC
@@ -47,11 +55,8 @@ function getItemAlerts(item) {
 
   if (item.expirationDate) {
     const daysLeft = Math.ceil((new Date(item.expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
-    if (daysLeft < 0) {
-      alerts.push({ type: 'danger', msg: 'Expired' });
-    } else if (daysLeft <= EXPIRY_WARN_DAYS) {
-      alerts.push({ type: 'warning', msg: `Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` });
-    }
+    if (daysLeft < 0) alerts.push({ type: 'danger', msg: 'Expired' });
+    else if (daysLeft <= EXPIRY_WARN_DAYS) alerts.push({ type: 'warning', msg: `Expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` });
   }
 
   return alerts;
@@ -62,13 +67,11 @@ function renderNotifications() {
   if (!banner) return;
 
   const allAlerts = [];
-  getItems().forEach(item => {
-    getItemAlerts(item).forEach(a => allAlerts.push({ ...a, name: item.name }));
-  });
+  allItems.forEach(item => getItemAlerts(item).forEach(a => allAlerts.push({ ...a, name: item.name })));
 
   if (allAlerts.length === 0) {
-    banner.innerHTML = '';
     banner.style.display = 'none';
+    banner.innerHTML = '';
     return;
   }
 
@@ -81,9 +84,7 @@ function renderNotifications() {
     </div>
     <div class="notif-list">
       ${allAlerts.map(a => `
-        <span class="notif-item notif-${a.type}">
-          <strong>${a.name}</strong>: ${a.msg}
-        </span>
+        <span class="notif-item notif-${a.type}"><strong>${a.name}</strong>: ${a.msg}</span>
       `).join('')}
     </div>
   `;
@@ -117,12 +118,9 @@ function setFilter(btn) {
 function renderItems() {
   const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
   const grid = document.getElementById('itemGrid');
-  let items = getItems();
+  let items = [...allItems];
 
-  if (currentFilter !== 'all') {
-    items = items.filter(i => i.classification === currentFilter);
-  }
-
+  if (currentFilter !== 'all') items = items.filter(i => i.classification === currentFilter);
   if (query) {
     items = items.filter(i =>
       i.name.toLowerCase().includes(query) ||
@@ -143,9 +141,7 @@ function renderItems() {
 
   grid.innerHTML = items.map(item => {
     const alerts = getItemAlerts(item);
-    const alertBadges = alerts.map(a =>
-      `<span class="alert-badge badge-${a.type}">${a.msg}</span>`
-    ).join('');
+    const alertBadges = alerts.map(a => `<span class="alert-badge badge-${a.type}">${a.msg}</span>`).join('');
     const color = CLASS_COLORS[item.classification] || '#999';
     const expText = item.expirationDate
       ? `<p class="item-exp"><i class="fas fa-calendar-alt"></i> Exp: ${formatDate(item.expirationDate)}</p>`
@@ -153,12 +149,13 @@ function renderItems() {
     const imgContent = item.image
       ? `<img src="${item.image}" alt="${item.name}" onerror="this.parentElement.classList.add('img-failed')" />`
       : '';
+    const id = item._id;
 
     return `
       <div class="item-card ${alerts.some(a => a.type === 'danger') ? 'card-danger' : alerts.length > 0 ? 'card-warning' : ''}">
         <div class="card-img-wrap ${!item.image ? 'no-img' : ''}">
           ${imgContent}
-          ${!item.image ? `<i class="fas fa-box-open card-img-icon"></i>` : ''}
+          ${!item.image ? '<i class="fas fa-box-open card-img-icon"></i>' : ''}
         </div>
         <div class="card-body">
           <div class="card-top">
@@ -171,12 +168,8 @@ function renderItems() {
           <p class="item-qty"><i class="fas fa-box"></i> Qty: <strong>${item.qty}</strong></p>
           ${expText}
           <div class="card-actions">
-            <button class="btn-icon" onclick="openEditModal(${item.id})" title="Edit">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-icon btn-del" onclick="openDeleteModal(${item.id})" title="Delete">
-              <i class="fas fa-trash"></i>
-            </button>
+            <button class="btn-icon" onclick="openEditModal('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon btn-del" onclick="openDeleteModal('${id}')" title="Delete"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div>
@@ -211,10 +204,10 @@ function openAddModal() {
 }
 
 function openEditModal(id) {
-  const item = getItems().find(i => i.id === id);
+  const item = allItems.find(i => String(i._id) === String(id));
   if (!item) return;
 
-  editingId = id;
+  editingId = String(id);
   pendingImageData = item.image || null;
 
   document.getElementById('modalTitle').textContent = 'Edit Item';
@@ -229,8 +222,7 @@ function openEditModal(id) {
 
   toggleExpDate();
 
-  const preview = document.getElementById('imgPreview');
-  preview.innerHTML = item.image
+  document.getElementById('imgPreview').innerHTML = item.image
     ? `<img src="${item.image}" alt="preview" />`
     : '';
 
@@ -245,8 +237,7 @@ function closeModal() {
 
 function toggleExpDate() {
   const cls = document.getElementById('f-class').value;
-  document.getElementById('expDateGroup').style.display =
-    ['food', 'medicine'].includes(cls) ? '' : 'none';
+  document.getElementById('expDateGroup').style.display = ['food', 'medicine'].includes(cls) ? '' : 'none';
 }
 
 function previewImage(event) {
@@ -271,9 +262,8 @@ function previewUrl() {
   }
 }
 
-function submitItem(e) {
+async function submitItem(e) {
   e.preventDefault();
-
   const item = {
     name:           document.getElementById('f-name').value.trim(),
     description:    document.getElementById('f-desc').value.trim(),
@@ -284,15 +274,28 @@ function submitItem(e) {
     image:          pendingImageData || null,
   };
 
-  if (editingId) {
-    updateItemById(editingId, item);
-  } else {
-    addItem(item);
-  }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
 
-  closeModal();
-  renderItems();
-  renderNotifications();
+  try {
+    if (editingId) {
+      await apiUpdateItem(editingId, item);
+      const idx = allItems.findIndex(i => String(i._id) === editingId);
+      if (idx !== -1) allItems[idx] = { ...allItems[idx], ...item };
+    } else {
+      const created = await apiAddItem(item);
+      allItems.push(created);
+    }
+    closeModal();
+    renderItems();
+    renderNotifications();
+  } catch (err) {
+    alert('Error saving item: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingId ? 'Save Changes' : 'Add Item';
+  }
 }
 
 // ============================================================
@@ -310,75 +313,68 @@ function closeDeleteModal() {
   document.getElementById('deleteModal').classList.add('hidden');
 }
 
-function confirmDelete() {
-  if (pendingDeleteId) {
-    deleteItemById(pendingDeleteId);
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  try {
+    await apiDeleteItem(pendingDeleteId);
+    allItems = allItems.filter(i => String(i._id) !== String(pendingDeleteId));
     closeDeleteModal();
     renderItems();
     renderNotifications();
+  } catch (err) {
+    alert('Error deleting item: ' + err.message);
   }
 }
 
 // ============================================================
-// SEED DATA (pre-populate from existing items)
+// SEED DATA (posted to DB only if collection is empty)
 // ============================================================
-function seedInitialData() {
-  if (getItems().length === 0) {
-    saveItems([
-      {
-        id: 1,
-        name: 'Bowls',
-        description: 'Ceramic dinner bowls',
-        classification: 'general',
-        location: 'Right Kitchen Cabinet, Second Floor',
-        qty: 4,
-        expirationDate: null,
-        image: null,
-        addedDate: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Switch',
-        description: 'Nintendo Switch console',
-        classification: 'electronics',
-        location: 'Living Room Desk',
-        qty: 1,
-        expirationDate: null,
-        image: null,
-        addedDate: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: 'Shoe Cleaner',
-        description: 'Shoe cleaning spray',
-        classification: 'cleaning',
-        location: 'Entrance Brown Cabinet',
-        qty: 1,
-        expirationDate: null,
-        image: null,
-        addedDate: new Date().toISOString(),
-      },
-    ]);
+async function seedIfEmpty() {
+  if (allItems.length > 0) return;
+  const seed = [
+    { name: 'Bowls',       description: 'Ceramic dinner bowls',    classification: 'general',     location: 'Right Kitchen Cabinet, Second Floor', qty: 4, expirationDate: null, image: null },
+    { name: 'Switch',      description: 'Nintendo Switch console',  classification: 'electronics', location: 'Living Room Desk',                    qty: 1, expirationDate: null, image: null },
+    { name: 'Shoe Cleaner',description: 'Shoe cleaning spray',      classification: 'cleaning',    location: 'Entrance Brown Cabinet',              qty: 1, expirationDate: null, image: null },
+  ];
+  for (const item of seed) {
+    const created = await apiAddItem(item);
+    allItems.push(created);
   }
 }
 
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-  seedInitialData();
+function showLoading() {
+  document.getElementById('itemGrid').innerHTML = `
+    <div class="no-items">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Loading items...</p>
+    </div>`;
+}
 
-  // Handle search query passed from index.html
+document.addEventListener('DOMContentLoaded', async () => {
+  showLoading();
+
+  try {
+    allItems = await fetchItems();
+    await seedIfEmpty();
+  } catch (err) {
+    document.getElementById('itemGrid').innerHTML = `
+      <div class="no-items">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Could not load items: ${err.message}</p>
+      </div>`;
+    return;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const q = params.get('item') || params.get('q');
-  if (q) {
-    document.getElementById('searchInput').value = q;
-  }
+  if (q) document.getElementById('searchInput').value = q;
 
   renderItems();
   renderNotifications();
 
-  // Close modals on backdrop click
   document.getElementById('itemModal').addEventListener('click', e => {
     if (e.target === document.getElementById('itemModal')) closeModal();
   });

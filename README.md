@@ -98,6 +98,6 @@ heroku git:remote -a zq1anddar0
 ## Tech Stack
 
 - Plain HTML, CSS, JavaScript (no framework)
-- Node.js + Express (static file server)
-- localStorage for inventory data persistence
+- Node.js + Express (REST API + static file server)
+- MongoDB Atlas (cloud database for inventory)
 - Hosted on Heroku

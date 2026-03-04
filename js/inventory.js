@@ -80,6 +80,10 @@ function getItemAlerts(item) {
   const alerts = [];
   const qty = Number(item.qty);
 
+  if (item.missing) {
+    alerts.push({ type: 'missing', msg: 'Reported missing' });
+  }
+
   if (qty === 0) {
     alerts.push({ type: 'danger', msg: 'Out of stock' });
   } else if (qty <= LOW_STOCK_THRESHOLD && CONSUMABLE_CLASSES.includes(item.classification)) {
@@ -178,7 +182,10 @@ function renderItems() {
 
   grid.innerHTML = items.map(item => {
     const alerts = getItemAlerts(item);
-    const alertBadges = alerts.map(a => `<span class="alert-badge badge-${a.type}">${a.msg}</span>`).join('');
+    const nonMissingAlerts = alerts.filter(a => a.type !== 'missing');
+    const alertBadges = alerts.map(a =>
+      `<span class="alert-badge badge-${a.type}">${a.type === 'missing' ? '<i class="fas fa-question-circle"></i> ' : ''}${a.msg}</span>`
+    ).join('');
     const color = CLASS_COLORS[item.classification] || '#999';
     const expText = item.expirationDate
       ? `<p class="item-exp"><i class="fas fa-calendar-alt"></i> Exp: ${formatDate(item.expirationDate)}</p>`
@@ -190,9 +197,12 @@ function renderItems() {
       ? `<p class="item-loc-detail"><i class="fas fa-info-circle"></i> ${item.locationDetail}</p>`
       : '';
     const id = item._id;
+    const stateClass = item.missing ? 'card-missing'
+      : nonMissingAlerts.some(a => a.type === 'danger') ? 'card-danger'
+      : nonMissingAlerts.length > 0 ? 'card-warning' : '';
 
     return `
-      <div class="item-card ${alerts.some(a => a.type === 'danger') ? 'card-danger' : alerts.length > 0 ? 'card-warning' : ''}">
+      <div class="item-card ${stateClass}">
         <div class="card-img-wrap ${!item.image ? 'no-img' : ''}">
           ${imgContent}
           ${!item.image ? '<i class="fas fa-box-open card-img-icon"></i>' : ''}
@@ -210,6 +220,7 @@ function renderItems() {
           ${expText}
           <div class="card-actions">
             <button class="btn-icon" onclick="openEditModal('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon btn-flag ${item.missing ? 'active' : ''}" onclick="toggleMissing('${id}')" title="${item.missing ? 'Mark as Found' : 'Report Missing'}"><i class="fas fa-flag"></i></button>
             <button class="btn-icon btn-del" onclick="openDeleteModal('${id}')" title="Delete"><i class="fas fa-trash"></i></button>
           </div>
         </div>
@@ -399,6 +410,23 @@ async function submitItem(e) {
   } finally {
     btn.disabled = false;
     btn.textContent = editingId ? 'Save Changes' : 'Add Item';
+  }
+}
+
+// ============================================================
+// MISSING FLAG
+// ============================================================
+async function toggleMissing(id) {
+  const item = allItems.find(i => String(i._id) === String(id));
+  if (!item) return;
+  const newVal = !item.missing;
+  try {
+    await apiUpdateItem(id, { missing: newVal });
+    item.missing = newVal;
+    renderItems();
+    renderNotifications();
+  } catch (err) {
+    alert('Error updating item: ' + err.message);
   }
 }
 

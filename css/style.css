@@ -344,6 +344,11 @@
   border: 2px solid #fb8c00;
 }
 
+.item-card.card-missing {
+  border: 2px dashed #7E57C2;
+  opacity: 0.78;
+}
+
 .card-img-wrap {
   width: 100%;
   height: 160px;
@@ -413,6 +418,11 @@
   color: #e65100;
 }
 
+.badge-missing {
+  background: #ede7f6;
+  color: #4527a0;
+}
+
 .item-name {
   font-size: 1em;
   font-weight: 700;
@@ -465,6 +475,22 @@
 .btn-icon:hover {
   background: #f0f0f0;
   color: #333;
+}
+
+.btn-flag {
+  color: #bbb;
+}
+
+.btn-flag:hover {
+  background: #ede7f6;
+  border-color: #7E57C2;
+  color: #7E57C2;
+}
+
+.btn-flag.active {
+  color: #7E57C2;
+  background: #ede7f6;
+  border-color: #7E57C2;
 }
 
 .btn-del:hover {
@@ -566,6 +592,11 @@
 .notif-warning {
   background: #fff3e0;
   color: #e65100;
+}
+
+.notif-missing {
+  background: #ede7f6;
+  color: #4527a0;
 }
 
 /* Modal */

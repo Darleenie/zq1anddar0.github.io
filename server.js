@@ -105,8 +105,8 @@ app.post('/api/auth/forgot', async (req, res) => {
   try {
     const { username } = req.body;
     const user = await db.collection('users').findOne({ username });
-    // Always respond OK to avoid username enumeration
-    if (!user || !user.email) return res.json({ ok: true });
+    if (!user) { console.log(`[forgot] no user found: ${username}`); return res.json({ ok: true }); }
+    if (!user.email) { console.log(`[forgot] user ${username} has no email in DB`); return res.json({ ok: true }); }
 
     const rawToken  = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -122,8 +122,9 @@ app.post('/api/auth/forgot', async (req, res) => {
 
     const transporter = getMailTransporter();
     if (!transporter) {
-      console.log(`[DEV] Password reset link for ${username}: ${link}`);
+      console.log(`[forgot] GMAIL_USER/GMAIL_APP_PASSWORD not set — reset link for ${username}: ${link}`);
     } else {
+      console.log(`[forgot] sending email to ${user.email} for ${username}`);
       await transporter.sendMail({
         to:      user.email,
         from:    process.env.GMAIL_USER,
@@ -135,6 +136,7 @@ app.post('/api/auth/forgot', async (req, res) => {
           <p>If you didn't request this, ignore this email.</p>
         `,
       });
+      console.log(`[forgot] email sent to ${user.email}`);
     }
 
     res.json({ ok: true });

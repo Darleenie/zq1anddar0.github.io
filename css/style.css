@@ -727,6 +727,21 @@
   max-width: 100%;
   border-radius: 6px;
   border: 1px solid #ddd;
+  display: block;
+}
+
+.compress-status {
+  font-size: 0.82em;
+  color: #888;
+  padding: 6px 0;
+  display: block;
+}
+
+.compress-info {
+  display: block;
+  font-size: 0.78em;
+  color: #555;
+  margin-top: 5px;
 }
 
 .form-actions {

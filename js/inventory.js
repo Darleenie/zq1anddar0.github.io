@@ -240,16 +240,63 @@ function toggleExpDate() {
   document.getElementById('expDateGroup').style.display = ['food', 'medicine'].includes(cls) ? '' : 'none';
 }
 
-function previewImage(event) {
+// ── Image compression ──────────────────────────────────────
+function compressImage(file, maxDim = 800, quality = 0.72) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width  = Math.round(width  * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function b64Bytes(b64) {
+  const data = b64.split(',')[1] || b64;
+  return Math.round(data.length * 0.75);
+}
+
+function fmtBytes(n) {
+  return n < 1024 * 1024
+    ? (n / 1024).toFixed(1) + ' KB'
+    : (n / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+async function previewImage(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    pendingImageData = e.target.result;
-    document.getElementById('imgPreview').innerHTML = `<img src="${e.target.result}" alt="preview" />`;
-    document.getElementById('f-img-url').value = '';
-  };
-  reader.readAsDataURL(file);
+
+  const preview = document.getElementById('imgPreview');
+  preview.innerHTML = '<span class="compress-status"><i class="fas fa-spinner fa-spin"></i> Compressing…</span>';
+
+  const originalSize = file.size;
+  const compressed   = await compressImage(file);
+  const compressedSize = b64Bytes(compressed);
+
+  pendingImageData = compressed;
+  document.getElementById('f-img-url').value = '';
+
+  preview.innerHTML = `
+    <img src="${compressed}" alt="preview" />
+    <span class="compress-info">
+      <i class="fas fa-compress-arrows-alt"></i>
+      ${fmtBytes(originalSize)} → <strong>${fmtBytes(compressedSize)}</strong>
+    </span>
+  `;
 }
 
 function previewUrl() {

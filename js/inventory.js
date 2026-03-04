@@ -488,6 +488,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('importModal').addEventListener('click', e => {
     if (e.target === document.getElementById('importModal')) closeImportModal();
   });
+  document.getElementById('botAssistModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('botAssistModal')) closeBotAssistModal();
+  });
 });
 
 // ============================================================
@@ -685,6 +688,263 @@ function renderCSVPreview() {
 
   document.getElementById('importStep1').style.display = 'none';
   document.getElementById('importStep2').style.display = '';
+}
+
+// ============================================================
+// BOT ASSIST
+// ============================================================
+let botAssistRoom = 'living';
+let botParsedCSVRows = [];
+let botRawCSVText = '';
+
+function openBotAssistModal() {
+  botAssistRoom = currentRoom;
+  botParsedCSVRows = [];
+  botRawCSVText = '';
+  document.querySelectorAll('.bot-room-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.room === botAssistRoom);
+  });
+  setBotStep(1);
+  document.getElementById('botAssistModal').classList.remove('hidden');
+}
+
+function closeBotAssistModal() {
+  document.getElementById('botAssistModal').classList.add('hidden');
+}
+
+function setBotStep(n) {
+  [1, 2, 3].forEach(i => {
+    const content = document.getElementById(`botStepContent${i}`);
+    const ind     = document.getElementById(`botStepInd${i}`);
+    if (content) content.style.display = i === n ? '' : 'none';
+    if (ind) {
+      ind.classList.toggle('active', i === n);
+      ind.classList.toggle('done',   i < n);
+    }
+  });
+  // Reset step-3 sub-state whenever we enter it
+  if (n === 3) {
+    document.getElementById('botCSVInput').style.display   = '';
+    document.getElementById('botPreviewArea').style.display = 'none';
+    document.getElementById('botCSVPaste').value = '';
+    document.querySelectorAll('.bot-csv-tab').forEach(b => b.classList.remove('active'));
+    document.querySelector('.bot-csv-tab[data-tab="paste"]').classList.add('active');
+    document.getElementById('botPasteArea').style.display   = '';
+    document.getElementById('botUploadArea').style.display  = 'none';
+    const fi = document.getElementById('botCSVFileInput');
+    if (fi) fi.value = '';
+  }
+}
+
+function selectBotRoom(btn) {
+  document.querySelectorAll('.bot-room-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  botAssistRoom = btn.dataset.room;
+}
+
+// ── Prompt generation ──────────────────────────────────────
+function generateBotPrompt(room) {
+  const roomLabel = ROOM_LABELS[room];
+
+  const existingLocations = [...new Set(
+    allItems
+      .filter(i => (i.room || 'living') === room)
+      .map(i => i.location)
+      .filter(Boolean)
+  )];
+
+  const locationContext = existingLocations.length > 0
+    ? existingLocations.map(l => `  - ${l}`).join('\n')
+    : '  (No existing storage spots recorded yet — feel free to suggest appropriate ones)';
+
+  return `You are helping me organize household items into my ${roomLabel}.
+
+## Your task:
+1. Ask me to take a clear photo of the items I want to store and share it with you.
+2. From the photo, identify each item (name, what it is, estimated quantity if visible).
+3. Classify each item: food / medicine / cleaning / electronics / general
+4. Suggest a specific storage location based on the room context below.
+5. Present your suggestions in a table and let me confirm or adjust each one.
+6. Once I confirm, output the final CSV in a code block.
+
+## Room: ${roomLabel}
+Known storage spots already in use in this room:
+${locationContext}
+
+## CSV output format (output inside \`\`\`csv ... \`\`\` when confirmed):
+name,classification,room,location,locationDetail,qty,expirationDate,description
+
+Column rules:
+- name: item name
+- classification: food / medicine / cleaning / electronics / general
+- room: ${room}
+- location: main storage spot (e.g. "Kitchen Cabinet", "Bathroom Shelf")
+- locationDetail: more specific detail (e.g. "Top shelf, left side") — can be left blank
+- qty: number, default to 1 if not clearly visible
+- expirationDate: YYYY-MM-DD for food/medicine if visible, otherwise leave blank
+- description: brief optional description
+
+## Rules:
+- First, ask me to take a photo of the items laid out on a flat, well-lit surface and share it
+- Identify every distinct item visible in the photo
+- Reuse the existing storage spots listed above when logical; suggest new ones only when needed
+- Show suggestions in a clear table (item → suggested location) before asking for confirmation
+- Allow me to adjust any suggestion before finalizing
+- Output the final CSV in a \`\`\`csv code block so I can copy it easily
+
+Let's begin — please ask me to share my photo.`;
+}
+
+function showBotPromptStep() {
+  document.getElementById('botPromptText').value = generateBotPrompt(botAssistRoom);
+  setBotStep(2);
+}
+
+async function copyBotPrompt() {
+  const text = document.getElementById('botPromptText').value;
+  const btn  = document.getElementById('copyPromptBtn');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    document.getElementById('botPromptText').select();
+    document.execCommand('copy');
+  }
+  btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+  setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copy Prompt'; }, 2000);
+}
+
+// ── Step 3: CSV tab switch ─────────────────────────────────
+function switchBotCSVTab(btn) {
+  document.querySelectorAll('.bot-csv-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  document.getElementById('botPasteArea').style.display  = tab === 'paste'  ? '' : 'none';
+  document.getElementById('botUploadArea').style.display = tab === 'upload' ? '' : 'none';
+}
+
+// Strip ```csv ... ``` wrapper that chatbots commonly output
+function extractCSVFromText(text) {
+  const match = text.match(/```(?:csv)?\s*\n?([\s\S]*?)```/i);
+  return match ? match[1].trim() : text.trim();
+}
+
+function previewBotCSVFromPaste() {
+  const raw = document.getElementById('botCSVPaste').value.trim();
+  if (!raw) { alert('Please paste your CSV text first.'); return; }
+  const csv = extractCSVFromText(raw);
+  botRawCSVText = csv;
+  parseBotAndRender(csv);
+}
+
+function handleBotCSVFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const csv = extractCSVFromText(e.target.result);
+    botRawCSVText = csv;
+    parseBotAndRender(csv);
+  };
+  reader.readAsText(file);
+}
+
+function parseBotAndRender(csvText) {
+  const raw = parseCSV(csvText);
+  if (raw.length === 0) {
+    alert('No data rows found. Make sure the CSV has a header row and at least one item.');
+    return;
+  }
+  botParsedCSVRows = raw.map(validateRow);
+  renderBotCSVPreview();
+}
+
+function renderBotCSVPreview() {
+  const validCount   = botParsedCSVRows.filter(r => r.valid).length;
+  const invalidCount = botParsedCSVRows.length - validCount;
+
+  document.getElementById('botImportSummary').innerHTML =
+    `<span class="csv-ok"><i class="fas fa-check-circle"></i> ${validCount} item${validCount !== 1 ? 's' : ''} ready</span>` +
+    (invalidCount > 0
+      ? `&nbsp;&nbsp;<span class="csv-skip"><i class="fas fa-times-circle"></i> ${invalidCount} row${invalidCount !== 1 ? 's' : ''} will be skipped</span>`
+      : '');
+
+  document.getElementById('botConfirmLabel').textContent = `Import ${validCount} Item${validCount !== 1 ? 's' : ''}`;
+  document.getElementById('botConfirmImportBtn').disabled = validCount === 0;
+
+  document.getElementById('botCSVPreviewTable').innerHTML = `
+    <thead>
+      <tr>
+        <th>#</th><th>Name</th><th>Classification</th><th>Room</th>
+        <th>Location</th><th>Qty</th><th>Expiration</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${botParsedCSVRows.map((r, i) => `
+        <tr class="${r.valid ? (r.warnings.length ? 'row-warn' : 'row-ok') : 'row-error'}">
+          <td>${i + 1}</td>
+          <td>${r.item.name || '<em>missing</em>'}</td>
+          <td>${r.item.classification}</td>
+          <td>${ROOM_LABELS[r.item.room] || r.item.room}</td>
+          <td>${r.item.location || '<em>missing</em>'}</td>
+          <td>${r.item.qty}</td>
+          <td>${r.item.expirationDate || '—'}</td>
+          <td class="status-cell">
+            ${r.errors.length   ? `<span class="csv-skip" title="${r.errors.join(', ')}"><i class="fas fa-times-circle"></i> Skip</span>` : ''}
+            ${r.warnings.length ? `<span class="csv-warn" title="${r.warnings.join(', ')}"><i class="fas fa-exclamation-triangle"></i> Fixed</span>` : ''}
+            ${!r.errors.length && !r.warnings.length ? '<span class="csv-ok"><i class="fas fa-check-circle"></i></span>' : ''}
+          </td>
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+
+  document.getElementById('botCSVInput').style.display   = 'none';
+  document.getElementById('botPreviewArea').style.display = '';
+}
+
+function resetBotCSVInput() {
+  document.getElementById('botCSVInput').style.display   = '';
+  document.getElementById('botPreviewArea').style.display = 'none';
+  const fi = document.getElementById('botCSVFileInput');
+  if (fi) fi.value = '';
+}
+
+function downloadBotCSV() {
+  if (!botRawCSVText) return;
+  const blob = new Blob([botRawCSVText], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `bot_assist_${botAssistRoom}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
+
+async function confirmBotImport() {
+  const validItems = botParsedCSVRows.filter(r => r.valid).map(r => r.item);
+  if (validItems.length === 0) return;
+
+  const btn = document.getElementById('botConfirmImportBtn');
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+
+  try {
+    const res = await fetch('/api/items/bulk', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ items: validItems }),
+    });
+    if (!res.ok) throw new Error('Server error');
+    const { inserted } = await res.json();
+
+    closeBotAssistModal();
+    allItems = await fetchItems();
+    renderItems();
+    renderNotifications();
+    alert(`Successfully imported ${inserted} item${inserted !== 1 ? 's' : ''}!`);
+  } catch (err) {
+    alert('Import failed: ' + err.message);
+    btn.disabled  = false;
+    btn.innerHTML = `<i class="fas fa-database"></i> <span id="botConfirmLabel">Import ${validItems.length} Items</span>`;
+  }
 }
 
 // ── Confirm & bulk POST ────────────────────────────────────

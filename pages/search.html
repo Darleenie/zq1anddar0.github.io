@@ -37,6 +37,9 @@
     <div class="inventory-header">
       <h1 id="roomHeading"><i class="fas fa-couch"></i> Living Room</h1>
       <div class="header-btns">
+        <button class="btn-bot-assist" onclick="openBotAssistModal()">
+          <i class="fas fa-robot"></i> Bot Assist
+        </button>
         <button class="btn-import" onclick="openImportModal()">
           <i class="fas fa-file-csv"></i> Import CSV
         </button>
@@ -223,6 +226,132 @@
             <i class="fas fa-database"></i> <span id="confirmImportLabel">Import</span>
           </button>
         </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Bot Assist Modal ──────────────────────────────────── -->
+  <div id="botAssistModal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h2><i class="fas fa-robot"></i> Bot Assist</h2>
+        <button class="modal-close" onclick="closeBotAssistModal()">&times;</button>
+      </div>
+
+      <!-- Step indicator -->
+      <div class="bot-stepper">
+        <div class="bot-step-item active" id="botStepInd1">
+          <span class="bot-step-num">1</span> Pick Room
+        </div>
+        <div class="bot-step-line"></div>
+        <div class="bot-step-item" id="botStepInd2">
+          <span class="bot-step-num">2</span> Get Prompt
+        </div>
+        <div class="bot-step-line"></div>
+        <div class="bot-step-item" id="botStepInd3">
+          <span class="bot-step-num">3</span> Import CSV
+        </div>
+      </div>
+
+      <!-- Step 1: Room selection -->
+      <div id="botStepContent1">
+        <p class="bot-step-desc">Which room are you organizing items for?</p>
+        <div class="bot-room-btns">
+          <button type="button" class="bot-room-btn active" data-room="living" onclick="selectBotRoom(this)">
+            <i class="fas fa-couch"></i>
+            Living Room
+          </button>
+          <button type="button" class="bot-room-btn" data-room="zq1" onclick="selectBotRoom(this)">
+            <i class="fas fa-door-closed"></i>
+            zq1's Room
+          </button>
+          <button type="button" class="bot-room-btn" data-room="dar0" onclick="selectBotRoom(this)">
+            <i class="fas fa-door-closed"></i>
+            dar0's Room
+          </button>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="showBotPromptStep()">
+            Generate Prompt <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Prompt display -->
+      <div id="botStepContent2" style="display:none">
+        <div class="bot-how-it-works">
+          <p><strong>How to use this prompt:</strong></p>
+          <ol>
+            <li>Copy the prompt below</li>
+            <li>Open any AI chatbot — <strong>ChatGPT, Claude, Gemini</strong>, etc.</li>
+            <li>Paste it in and follow the chatbot's instructions (it will ask you to share a photo)</li>
+            <li>When the chatbot outputs a CSV, come back and click <strong>"I Have My CSV"</strong></li>
+          </ol>
+        </div>
+        <div class="bot-prompt-wrap">
+          <textarea id="botPromptText" class="bot-prompt-textarea" readonly></textarea>
+          <button class="btn-copy-prompt" onclick="copyBotPrompt()" id="copyPromptBtn">
+            <i class="fas fa-copy"></i> Copy Prompt
+          </button>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="setBotStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-primary" onclick="setBotStep(3)">I Have My CSV <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 3: CSV input + preview -->
+      <div id="botStepContent3" style="display:none">
+
+        <!-- 3a: Input area -->
+        <div id="botCSVInput">
+          <div class="bot-csv-tab-bar">
+            <button class="bot-csv-tab active" data-tab="paste" onclick="switchBotCSVTab(this)">
+              <i class="fas fa-paste"></i> Paste CSV
+            </button>
+            <button class="bot-csv-tab" data-tab="upload" onclick="switchBotCSVTab(this)">
+              <i class="fas fa-upload"></i> Upload File
+            </button>
+          </div>
+
+          <div id="botPasteArea">
+            <textarea id="botCSVPaste" class="bot-csv-paste"
+              placeholder="Paste the CSV the chatbot gave you here. It's okay if it includes the triple-backtick wrapper — we'll strip it automatically."></textarea>
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="setBotStep(2)"><i class="fas fa-arrow-left"></i> Back to Prompt</button>
+              <button class="btn-primary" onclick="previewBotCSVFromPaste()"><i class="fas fa-table"></i> Preview</button>
+            </div>
+          </div>
+
+          <div id="botUploadArea" style="display:none">
+            <div class="import-step1-btns" style="margin-top:16px">
+              <label class="btn-add" style="cursor:pointer">
+                <i class="fas fa-upload"></i> Choose CSV File
+                <input type="file" id="botCSVFileInput" accept=".csv,.txt" onchange="handleBotCSVFile(event)" style="display:none" />
+              </label>
+            </div>
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="setBotStep(2)"><i class="fas fa-arrow-left"></i> Back to Prompt</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3b: Preview table -->
+        <div id="botPreviewArea" style="display:none">
+          <p id="botImportSummary" class="import-summary"></p>
+          <div class="csv-preview-wrap">
+            <table class="csv-preview-table" id="botCSVPreviewTable"></table>
+          </div>
+          <div class="form-actions" style="margin-top:16px">
+            <button class="btn-secondary" onclick="resetBotCSVInput()"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn-secondary" onclick="downloadBotCSV()"><i class="fas fa-download"></i> Download CSV</button>
+            <button class="btn-primary" id="botConfirmImportBtn" onclick="confirmBotImport()">
+              <i class="fas fa-database"></i> <span id="botConfirmLabel">Import</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>

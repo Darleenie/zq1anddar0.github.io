@@ -889,6 +889,212 @@
 .status-cell { white-space: nowrap; }
 
 /* ============================================================
+   BOT ASSIST
+   ============================================================ */
+.btn-bot-assist {
+  background: #7B5EA7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-bot-assist:hover { background: #6a4e96; }
+
+.bot-stepper {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.bot-step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #aaa;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bot-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ddd;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.bot-step-item.active { color: #7B5EA7; }
+.bot-step-item.active .bot-step-num { background: #7B5EA7; color: #fff; }
+.bot-step-item.done   { color: #4CAF50; }
+.bot-step-item.done   .bot-step-num { background: #4CAF50; color: #fff; }
+
+.bot-step-line {
+  flex: 1;
+  height: 2px;
+  background: #e0e0e0;
+  margin: 0 8px;
+}
+
+.bot-step-desc {
+  margin: 20px 0 14px;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.bot-room-btns {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.bot-room-btn {
+  padding: 18px 24px;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  background: #f9f9f9;
+  color: #555;
+  font-size: 0.92rem;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.7;
+  transition: all 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 120px;
+}
+
+.bot-room-btn i {
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.bot-room-btn:hover { border-color: #7B5EA7; color: #7B5EA7; }
+.bot-room-btn.active { border-color: #7B5EA7; background: #7B5EA7; color: #fff; }
+
+.bot-how-it-works {
+  background: #f8f4ff;
+  border: 1px solid #ddd5f5;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 16px 0 12px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.bot-how-it-works ol {
+  margin: 8px 0 0 16px;
+  padding: 0;
+  line-height: 1.9;
+}
+
+.bot-prompt-wrap {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.bot-prompt-textarea {
+  width: 100%;
+  height: 230px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 130px 12px 12px;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+  color: #333;
+  background: #fafafa;
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.55;
+}
+
+.btn-copy-prompt {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #7B5EA7;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 13px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-copy-prompt:hover { background: #6a4e96; }
+
+.bot-csv-tab-bar {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 14px;
+}
+
+.bot-csv-tab {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 0.87rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bot-csv-tab.active {
+  border-color: #7B5EA7;
+  background: #7B5EA7;
+  color: #fff;
+}
+
+.bot-csv-paste {
+  width: 100%;
+  height: 160px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-family: 'Courier New', monospace;
+  color: #333;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.bot-csv-paste:focus {
+  outline: none;
+  border-color: #7B5EA7;
+}
+
+/* ============================================================
    ROOM TABS
    ============================================================ */
 .room-tabs {
@@ -1048,6 +1254,52 @@
 
     .notification-banner {
       margin-top: 70px;
+    }
+
+    .btn-bot-assist {
+      font-size: 0.8rem;
+      padding: 8px 10px;
+    }
+
+    .bot-stepper {
+      padding: 12px 12px 16px;
+      gap: 0;
+    }
+
+    .bot-step-item {
+      font-size: 0.75rem;
+      gap: 4px;
+    }
+
+    .bot-step-num {
+      width: 22px;
+      height: 22px;
+      font-size: 0.72rem;
+    }
+
+    .bot-room-btns {
+      gap: 8px;
+    }
+
+    .bot-room-btn {
+      padding: 14px 16px;
+      min-width: 90px;
+      font-size: 0.85rem;
+    }
+
+    .bot-room-btn i {
+      font-size: 1.3rem;
+    }
+
+    .bot-prompt-textarea {
+      height: 180px;
+      padding-right: 12px;
+      padding-top: 44px;
+    }
+
+    .btn-copy-prompt {
+      top: 8px;
+      right: 8px;
     }
 
     .room-tabs {

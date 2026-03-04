@@ -18,9 +18,24 @@
 
   <main class="inventory-main">
 
+    <!-- Room Tabs -->
+    <div class="room-tabs">
+      <button class="room-tab active" data-room="living" onclick="setRoom(this)">
+        <i class="fas fa-couch"></i> Living Room
+      </button>
+      <button class="room-tab" data-room="zq1" onclick="setRoom(this)">
+        <i class="fas fa-door-closed"></i> zq1's Room
+        <span class="room-private-badge">Private</span>
+      </button>
+      <button class="room-tab" data-room="dar0" onclick="setRoom(this)">
+        <i class="fas fa-door-closed"></i> dar0's Room
+        <span class="room-private-badge">Private</span>
+      </button>
+    </div>
+
     <!-- Header -->
     <div class="inventory-header">
-      <h1><i class="fas fa-search"></i> Find My Stuff</h1>
+      <h1 id="roomHeading"><i class="fas fa-couch"></i> Living Room</h1>
       <div class="header-btns">
         <button class="btn-import" onclick="openImportModal()">
           <i class="fas fa-file-csv"></i> Import CSV
@@ -95,8 +110,28 @@
         </div>
 
         <div class="form-group">
-          <label for="f-loc">Location <span class="required">*</span></label>
+          <label>Room <span class="required">*</span></label>
+          <div class="room-selector">
+            <button type="button" class="room-sel-btn active" data-room="living" onclick="selectFormRoom(this)">
+              <i class="fas fa-couch"></i> Living Room
+            </button>
+            <button type="button" class="room-sel-btn" data-room="zq1" onclick="selectFormRoom(this)">
+              <i class="fas fa-door-closed"></i> zq1's Room
+            </button>
+            <button type="button" class="room-sel-btn" data-room="dar0" onclick="selectFormRoom(this)">
+              <i class="fas fa-door-closed"></i> dar0's Room
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="f-loc">Spot / Location <span class="required">*</span></label>
           <input type="text" id="f-loc" required placeholder="e.g. Kitchen Cabinet, Top Shelf" />
+        </div>
+
+        <div class="form-group">
+          <label for="f-loc-detail">Location Detail</label>
+          <input type="text" id="f-loc-detail" placeholder="e.g. Second shelf from the top, left side" />
         </div>
 
         <div class="form-group" id="expDateGroup" style="display:none">
@@ -161,6 +196,7 @@
           <p class="import-note">
             <i class="fas fa-info-circle"></i>
             Valid classifications: <code>food</code>, <code>medicine</code>, <code>cleaning</code>, <code>electronics</code>, <code>general</code><br>
+            Valid rooms: <code>living</code>, <code>zq1</code>, <code>dar0</code> (leave blank → living room)<br>
             Expiration date format: <code>YYYY-MM-DD</code> (leave blank if none)
           </p>
         </div>

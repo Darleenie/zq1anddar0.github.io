@@ -32,9 +32,42 @@ async function apiDeleteItem(id) {
 }
 
 // ============================================================
-// IN-MEMORY CACHE
+// IN-MEMORY CACHE + ROOM STATE
 // ============================================================
 let allItems = [];
+
+const ROOM_LABELS = {
+  living: 'Living Room',
+  zq1:    "zq1's Room",
+  dar0:   "dar0's Room",
+};
+const ROOM_ICONS = {
+  living: 'fa-couch',
+  zq1:    'fa-door-closed',
+  dar0:   'fa-door-closed',
+};
+
+let currentRoom = 'living';
+let selectedFormRoom = 'living';
+
+function setRoom(btn) {
+  document.querySelectorAll('.room-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRoom = btn.dataset.room;
+
+  const heading = document.getElementById('roomHeading');
+  if (heading) {
+    heading.innerHTML = `<i class="fas ${ROOM_ICONS[currentRoom]}"></i> ${ROOM_LABELS[currentRoom]}`;
+  }
+
+  renderItems();
+}
+
+function selectFormRoom(btn) {
+  document.querySelectorAll('.room-sel-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedFormRoom = btn.dataset.room;
+}
 
 // ============================================================
 // NOTIFICATION LOGIC
@@ -67,7 +100,7 @@ function renderNotifications() {
   if (!banner) return;
 
   const allAlerts = [];
-  allItems.forEach(item => getItemAlerts(item).forEach(a => allAlerts.push({ ...a, name: item.name })));
+  allItems.forEach(item => getItemAlerts(item).forEach(a => allAlerts.push({ ...a, name: item.name, room: ROOM_LABELS[item.room || 'living'] })));
 
   if (allAlerts.length === 0) {
     banner.style.display = 'none';
@@ -84,7 +117,7 @@ function renderNotifications() {
     </div>
     <div class="notif-list">
       ${allAlerts.map(a => `
-        <span class="notif-item notif-${a.type}"><strong>${a.name}</strong>: ${a.msg}</span>
+        <span class="notif-item notif-${a.type}"><strong>${a.name}</strong> <span class="notif-room">(${a.room})</span>: ${a.msg}</span>
       `).join('')}
     </div>
   `;
@@ -120,11 +153,15 @@ function renderItems() {
   const grid = document.getElementById('itemGrid');
   let items = [...allItems];
 
+  // Filter by current room (items without a room field default to 'living')
+  items = items.filter(i => (i.room || 'living') === currentRoom);
+
   if (currentFilter !== 'all') items = items.filter(i => i.classification === currentFilter);
   if (query) {
     items = items.filter(i =>
       i.name.toLowerCase().includes(query) ||
       i.location.toLowerCase().includes(query) ||
+      (i.locationDetail || '').toLowerCase().includes(query) ||
       (i.description || '').toLowerCase().includes(query) ||
       i.classification.toLowerCase().includes(query)
     );
@@ -149,6 +186,9 @@ function renderItems() {
     const imgContent = item.image
       ? `<img src="${item.image}" alt="${item.name}" onerror="this.parentElement.classList.add('img-failed')" />`
       : '';
+    const locDetail = item.locationDetail
+      ? `<p class="item-loc-detail"><i class="fas fa-info-circle"></i> ${item.locationDetail}</p>`
+      : '';
     const id = item._id;
 
     return `
@@ -165,6 +205,7 @@ function renderItems() {
           <h3 class="item-name">${item.name}</h3>
           ${item.description ? `<p class="item-desc">${item.description}</p>` : ''}
           <p class="item-loc"><i class="fas fa-map-marker-alt"></i> ${item.location}</p>
+          ${locDetail}
           <p class="item-qty"><i class="fas fa-box"></i> Qty: <strong>${item.qty}</strong></p>
           ${expText}
           <div class="card-actions">
@@ -200,6 +241,13 @@ function openAddModal() {
   document.getElementById('itemForm').reset();
   document.getElementById('imgPreview').innerHTML = '';
   document.getElementById('expDateGroup').style.display = 'none';
+
+  // Pre-select the current room tab in the form
+  selectedFormRoom = currentRoom;
+  document.querySelectorAll('.room-sel-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.room === currentRoom);
+  });
+
   document.getElementById('itemModal').classList.remove('hidden');
 }
 
@@ -216,9 +264,16 @@ function openEditModal(id) {
   document.getElementById('f-desc').value = item.description || '';
   document.getElementById('f-class').value = item.classification || '';
   document.getElementById('f-loc').value = item.location || '';
+  document.getElementById('f-loc-detail').value = item.locationDetail || '';
   document.getElementById('f-qty').value = item.qty ?? 1;
   document.getElementById('f-exp').value = item.expirationDate || '';
   document.getElementById('f-img-url').value = (item.image && !item.image.startsWith('data:')) ? item.image : '';
+
+  // Set room selector
+  selectedFormRoom = item.room || 'living';
+  document.querySelectorAll('.room-sel-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.room === selectedFormRoom);
+  });
 
   toggleExpDate();
 
@@ -315,7 +370,9 @@ async function submitItem(e) {
     name:           document.getElementById('f-name').value.trim(),
     description:    document.getElementById('f-desc').value.trim(),
     classification: document.getElementById('f-class').value,
+    room:           selectedFormRoom,
     location:       document.getElementById('f-loc').value.trim(),
+    locationDetail: document.getElementById('f-loc-detail').value.trim() || null,
     qty:            parseInt(document.getElementById('f-qty').value),
     expirationDate: document.getElementById('f-exp').value || null,
     image:          pendingImageData || null,
@@ -379,9 +436,9 @@ async function confirmDelete() {
 async function seedIfEmpty() {
   if (allItems.length > 0) return;
   const seed = [
-    { name: 'Bowls',       description: 'Ceramic dinner bowls',    classification: 'general',     location: 'Right Kitchen Cabinet, Second Floor', qty: 4, expirationDate: null, image: null },
-    { name: 'Switch',      description: 'Nintendo Switch console',  classification: 'electronics', location: 'Living Room Desk',                    qty: 1, expirationDate: null, image: null },
-    { name: 'Shoe Cleaner',description: 'Shoe cleaning spray',      classification: 'cleaning',    location: 'Entrance Brown Cabinet',              qty: 1, expirationDate: null, image: null },
+    { name: 'Bowls',       description: 'Ceramic dinner bowls',    classification: 'general',     room: 'living', location: 'Kitchen Cabinet', locationDetail: 'Right side, second shelf from top', qty: 4, expirationDate: null, image: null },
+    { name: 'Switch',      description: 'Nintendo Switch console',  classification: 'electronics', room: 'living', location: 'Living Room Desk',                                                  qty: 1, expirationDate: null, image: null },
+    { name: 'Shoe Cleaner',description: 'Shoe cleaning spray',      classification: 'cleaning',    room: 'living', location: 'Entrance Brown Cabinet',                                            qty: 1, expirationDate: null, image: null },
   ];
   for (const item of seed) {
     const created = await apiAddItem(item);
@@ -442,12 +499,12 @@ let parsedCSVRows = [];
 // ── Template download ──────────────────────────────────────
 function downloadTemplate() {
   const rows = [
-    ['name', 'classification', 'location', 'qty', 'expirationDate', 'description'],
-    ['Milk', 'food', 'Fridge Top Shelf', '2', '2026-06-01', ''],
-    ['Advil', 'medicine', 'Bathroom Cabinet', '20', '2026-12-01', 'Pain reliever 200mg'],
-    ['Dish Soap', 'cleaning', 'Under Kitchen Sink', '1', '', ''],
-    ['Phone Charger', 'electronics', 'Bedroom Desk', '1', '', 'USB-C'],
-    ['Scissors', 'general', 'Office Drawer', '2', '', ''],
+    ['name', 'classification', 'room', 'location', 'locationDetail', 'qty', 'expirationDate', 'description'],
+    ['Milk',          'food',        'living', 'Fridge Top Shelf',     '',                          '2', '2026-06-01', ''],
+    ['Advil',         'medicine',    'living', 'Bathroom Cabinet',     'Left side of cabinet',      '20','2026-12-01', 'Pain reliever 200mg'],
+    ['Dish Soap',     'cleaning',    'living', 'Under Kitchen Sink',   '',                          '1', '',           ''],
+    ['Phone Charger', 'electronics', 'zq1',   'Bedroom Desk',         'Top drawer',                '1', '',           'USB-C'],
+    ['Scissors',      'general',     'dar0',  'Office Drawer',        '',                          '2', '',           ''],
   ];
   const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -537,6 +594,13 @@ function validateRow(row) {
     expirationDate = '';
   }
 
+  const VALID_ROOMS = ['living', 'zq1', 'dar0'];
+  let room = (row.room || '').toLowerCase();
+  if (!VALID_ROOMS.includes(room)) {
+    if (room) warnings.push(`"${row.room}" room unknown → defaulted to "living"`);
+    room = 'living';
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -544,7 +608,9 @@ function validateRow(row) {
     item: {
       name:           row.name || '',
       classification,
+      room,
       location:       row.location || '',
+      locationDetail: row.locationdetail || row.locationDetail || '',
       qty,
       expirationDate: expirationDate || null,
       description:    row.description || '',
@@ -590,6 +656,7 @@ function renderCSVPreview() {
         <th>#</th>
         <th>Name</th>
         <th>Classification</th>
+        <th>Room</th>
         <th>Location</th>
         <th>Qty</th>
         <th>Expiration</th>
@@ -602,6 +669,7 @@ function renderCSVPreview() {
           <td>${i + 1}</td>
           <td>${r.item.name || '<em>missing</em>'}</td>
           <td>${r.item.classification}</td>
+          <td>${ROOM_LABELS[r.item.room] || r.item.room}</td>
           <td>${r.item.location || '<em>missing</em>'}</td>
           <td>${r.item.qty}</td>
           <td>${r.item.expirationDate || '—'}</td>

@@ -889,6 +889,116 @@
 .status-cell { white-space: nowrap; }
 
 /* ============================================================
+   ROOM TABS
+   ============================================================ */
+.room-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 16px 20px 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.room-tab {
+  position: relative;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  background: #f5f5f5;
+  color: #555;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.room-tab:hover {
+  background: #ede0d4;
+  color: #5C3D1E;
+}
+
+.room-tab.active {
+  background: #5C3D1E;
+  color: #fff;
+  font-weight: 600;
+}
+
+.room-private-badge {
+  font-size: 0.65rem;
+  background: rgba(0,0,0,0.18);
+  color: inherit;
+  border-radius: 4px;
+  padding: 1px 5px;
+  letter-spacing: 0.03em;
+}
+
+.room-tab.active .room-private-badge {
+  background: rgba(255,255,255,0.22);
+}
+
+/* ── Room selector inside the form ── */
+.room-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.room-sel-btn {
+  padding: 8px 14px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: #f9f9f9;
+  color: #555;
+  font-size: 0.87rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.room-sel-btn:hover {
+  border-color: #5C3D1E;
+  color: #5C3D1E;
+}
+
+.room-sel-btn.active {
+  border-color: #5C3D1E;
+  background: #5C3D1E;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Location detail on card ── */
+.item-loc-detail {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 2px 0 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.item-loc-detail i {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Notification room label ── */
+.notif-room {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #888;
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
   @media (max-width: 600px) {
@@ -938,5 +1048,20 @@
 
     .notification-banner {
       margin-top: 70px;
+    }
+
+    .room-tabs {
+      padding: 10px 10px 0;
+      gap: 4px;
+    }
+
+    .room-tab {
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+
+    .room-sel-btn {
+      padding: 7px 10px;
+      font-size: 0.82rem;
     }
   }

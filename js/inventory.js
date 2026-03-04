@@ -46,6 +46,11 @@ const ROOM_ICONS = {
   zq1:    'fa-door-closed',
   dar0:   'fa-door-closed',
 };
+const ROOM_COLORS = {
+  living: '#5C3D1E',
+  zq1:    '#1565C0',
+  dar0:   '#6A1B9A',
+};
 
 let currentRoom = 'living';
 let selectedFormRoom = 'living';
@@ -154,6 +159,7 @@ function setFilter(btn) {
 
 function renderItems() {
   const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  updateSearchSuggestions(query);
   const grid = document.getElementById('itemGrid');
   let items = [...allItems];
 
@@ -459,6 +465,44 @@ function findPotentialDuplicates(name, room) {
     .slice(0, 3);
 }
 
+// ============================================================
+// SEARCH SUGGESTIONS
+// ============================================================
+function updateSearchSuggestions(query) {
+  const box = document.getElementById('searchSuggestions');
+  if (!box) return;
+  if (query.length < 2) { box.style.display = 'none'; return; }
+
+  const results = allItems
+    .map(i => ({ item: i, score: nameSimilarity(query, i.name || '') }))
+    .filter(r => r.score >= 0.45)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
+
+  if (results.length === 0) { box.style.display = 'none'; return; }
+
+  box.innerHTML = results.map(({ item }) => {
+    const room = item.room || 'living';
+    const color = ROOM_COLORS[room] || '#555';
+    const label = ROOM_LABELS[room] || room;
+    return `
+      <div class="search-sugg-item" onclick="applySuggestion(${JSON.stringify(item.name)})">
+        <span class="sugg-name">${item.name}</span>
+        <span class="sugg-meta">
+          <span class="sugg-room" style="background:${color}">${label}</span>
+          <span class="sugg-loc">${item.location}</span>
+        </span>
+      </div>`;
+  }).join('');
+  box.style.display = '';
+}
+
+function applySuggestion(name) {
+  document.getElementById('searchInput').value = name;
+  document.getElementById('searchSuggestions').style.display = 'none';
+  renderItems();
+}
+
 function showDupWarning(dups, newItem) {
   document.getElementById('modalFormActions').style.display = 'none';
   const warn = document.getElementById('dupWarning');
@@ -679,6 +723,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('botAssistModal').addEventListener('click', e => {
     if (e.target === document.getElementById('botAssistModal')) closeBotAssistModal();
+  });
+
+  // Close search suggestions on outside click or Escape
+  document.addEventListener('click', e => {
+    const wrapper = document.querySelector('.search-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      const box = document.getElementById('searchSuggestions');
+      if (box) box.style.display = 'none';
+    }
+  });
+  document.getElementById('searchInput')?.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.getElementById('searchSuggestions').style.display = 'none';
+    }
   });
 });
 

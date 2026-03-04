@@ -7,7 +7,8 @@
     },
     "dependencies": {
         "express": "^4.18.2",
-        "mongodb": "^7.1.0"
+        "mongodb": "^7.1.0",
+        "alexa-remote2": "^5.1.4"
     },
     "engines": {
         "node": "22.x"

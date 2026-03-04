@@ -42,21 +42,15 @@
 
     <!-- Platform pills -->
     <div class="sh-platform-row" id="platformRow" style="display:none">
-      <span class="sh-platform-badge sh-platform-st active" title="SmartThings connected">
+      <span class="sh-platform-badge sh-platform-st" title="SmartThings connected">
         <i class="fas fa-check-circle"></i> SmartThings
       </span>
-      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
-        Aqara
+      <span class="sh-platform-badge sh-platform-alexa" title="Alexa — status updates on load">
+        <i class="fab fa-amazon"></i> Alexa
       </span>
-      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
-        Sengled
-      </span>
-      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
-        Google / Nest
-      </span>
-      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">
-        Alexa
-      </span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">Aqara</span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">Sengled</span>
+      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">Google / Nest</span>
     </div>
 
     <!-- Room tabs -->
@@ -104,18 +98,33 @@
         </div>
       </div>
 
-      <div class="sh-settings-section sh-settings-other">
-        <h3><i class="fas fa-info-circle"></i> Other Platforms</h3>
+      <div class="sh-settings-section">
+        <h3><i class="fab fa-amazon" style="color:#f90"></i> Amazon Alexa</h3>
         <p class="sh-settings-desc">
-          <strong>Aqara, Sengled, Google Home/Nest, and Alexa</strong> don't have open device-control APIs for personal web apps.
-          The easiest way to control them here is to connect them to SmartThings — once connected,
-          they appear automatically in the device list above.
+          Alexa credentials are set on the <strong>server</strong> as environment variables — they never touch the browser.
+          Add these two config vars on Heroku (or your <code>.env</code> file locally) then redeploy:
+        </p>
+        <div class="sh-env-block">
+          <code>AMAZON_EMAIL=your@email.com</code>
+          <code>AMAZON_PASSWORD=yourpassword</code>
+        </div>
+        <p class="sh-settings-desc" style="margin-top:8px">
+          <i class="fas fa-exclamation-triangle" style="color:#e67e22"></i>
+          <strong>2FA / OTP:</strong> If your Amazon account has two-factor authentication enabled,
+          disable it or create a separate Amazon account for this integration.
+          <code>alexa-remote2</code> doesn't support interactive 2FA prompts.
+        </p>
+      </div>
+
+      <div class="sh-settings-section sh-settings-other">
+        <h3><i class="fas fa-info-circle"></i> Other Platforms (via SmartThings)</h3>
+        <p class="sh-settings-desc">
+          Connect these to SmartThings and they'll appear automatically in the device list.
         </p>
         <ul class="sh-platform-list">
-          <li><i class="fas fa-circle-notch"></i> Aqara → SmartThings (via Matter or direct Zigbee hub integration)</li>
-          <li><i class="fas fa-circle-notch"></i> Sengled → SmartThings (via Sengled Hub or Zigbee integration)</li>
-          <li><i class="fas fa-circle-notch"></i> Google Nest → SmartThings (via Google Home cloud integration)</li>
-          <li><i class="fas fa-circle-notch"></i> Alexa routines → Set up in Alexa app, trigger from SmartThings events</li>
+          <li><i class="fas fa-circle-notch"></i> Aqara → SmartThings via Matter or Zigbee hub</li>
+          <li><i class="fas fa-circle-notch"></i> Sengled → SmartThings via Sengled Hub integration</li>
+          <li><i class="fas fa-circle-notch"></i> Google Nest → SmartThings via Google Home cloud link</li>
         </ul>
       </div>
 

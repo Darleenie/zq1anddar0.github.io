@@ -70,6 +70,70 @@
     </div>
   </div>
 
+  <!-- Complete shopping modal -->
+  <div id="completeModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+
+      <!-- Step 1: Receipt + total -->
+      <div id="cstep-1">
+        <div class="modal-header">
+          <h3><i class="fas fa-receipt"></i> Complete Shopping</h3>
+          <button class="modal-close" onclick="closeCompleteModal()">&times;</button>
+        </div>
+        <div class="form-group" style="margin-top:16px">
+          <label for="cTotalAmount">Total amount ($)</label>
+          <input type="number" id="cTotalAmount" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Receipt photo <span style="color:#aaa;font-size:0.78rem">(optional)</span></label>
+          <input type="file" id="cReceiptFile" accept="image/*" onchange="previewReceipt(this)" />
+          <div id="cReceiptPreview" style="margin-top:8px"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="closeCompleteModal()">Cancel</button>
+          <button class="btn-primary" onclick="cNextStep()">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 2: Split -->
+      <div id="cstep-2" style="display:none">
+        <div class="modal-header">
+          <h3><i class="fas fa-users"></i> Split Bill</h3>
+        </div>
+        <div class="form-group" style="margin-top:16px">
+          <label>Who is splitting?</label>
+          <div style="display:flex;gap:16px;margin-top:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem">
+              <input type="checkbox" id="csplit-zq1" checked onchange="updateCustomSplitInputs()" /> zq1
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem">
+              <input type="checkbox" id="csplit-dar0" checked onchange="updateCustomSplitInputs()" /> dar0
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Split method</label>
+          <div class="room-selector" style="margin-top:8px">
+            <button type="button" class="room-sel-btn active" data-split="even" onclick="selectSplitMethod(this)">
+              <i class="fas fa-equals"></i> Even split
+            </button>
+            <button type="button" class="room-sel-btn" data-split="custom" onclick="selectSplitMethod(this)">
+              <i class="fas fa-sliders"></i> Custom
+            </button>
+          </div>
+        </div>
+        <div id="cCustomInputs" style="display:none"></div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="cPrevStep()"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-primary" id="cConfirmBtn" onclick="submitComplete()">
+            <i class="fas fa-paper-plane"></i> Confirm &amp; send
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <script src="../js/auth.js"></script>
   <script src="../js/shopping.js"></script>
   <script src="../js/nav.js" defer></script>

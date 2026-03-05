@@ -3,6 +3,12 @@ const LOW_STOCK_THRESHOLD = 2;
 const CONSUMABLE_CLASSES = ['food', 'medicine', 'hygiene', 'cleaning'];
 
 let _pendingLowStockItems = [];
+let _allLists = [];
+
+// ── Complete modal state ─────────────────────────────────────
+let _completingListId = null;
+let _receiptBase64    = null;
+let _splitMethod      = 'even';
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!isLoggedIn()) { openLoginModal(); return; }
@@ -19,9 +25,9 @@ async function loadCart() {
 }
 
 function renderCart(items) {
-  const list = document.getElementById('cartList');
+  const list     = document.getElementById('cartList');
   const clearBtn = document.getElementById('clearCartBtn');
-  const genBtn = document.getElementById('generateBtn');
+  const genBtn   = document.getElementById('generateBtn');
 
   if (!items.length) {
     list.innerHTML = '<p class="empty-state"><i class="fas fa-shopping-basket"></i> Your cart is empty.<br>Add items from <a href="/pages/search.html">Find My Stuff</a>.</p>';
@@ -63,7 +69,6 @@ async function openGenerateModal() {
     return;
   }
 
-  // Fetch low-stock items
   const res = await fetch('/api/items', { headers: { ...authHeaders() } });
   const items = await res.json();
   const lowStock = items.filter(i => {
@@ -110,8 +115,7 @@ function confirmGenerate(includeChecked) {
 // ── Generate list ────────────────────────────────────────────
 
 async function generateList(extras) {
-  // Get current cart items to form the list body
-  const cartRes = await fetch('/api/cart', { headers: { ...authHeaders() } });
+  const cartRes  = await fetch('/api/cart', { headers: { ...authHeaders() } });
   const cartItems = await cartRes.json();
 
   const allItems = [
@@ -125,7 +129,6 @@ async function generateList(extras) {
     body: JSON.stringify({ items: allItems }),
   });
 
-  // Clear cart after generating
   await fetch('/api/cart', { method: 'DELETE', headers: { ...authHeaders() } });
   loadCart();
   loadLists();
@@ -135,8 +138,8 @@ async function generateList(extras) {
 
 async function loadLists() {
   const res = await fetch('/api/shopping-lists', { headers: { ...authHeaders() } });
-  const lists = await res.json();
-  renderLists(lists);
+  _allLists = await res.json();
+  renderLists(_allLists);
 }
 
 function renderLists(lists) {
@@ -146,7 +149,9 @@ function renderLists(lists) {
     return;
   }
   container.innerHTML = lists.map(list => {
-    const date = new Date(list.createdAt).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+    const date = new Date(list.createdAt).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
     const badge = list.completed
       ? `<span class="list-complete-badge"><i class="fas fa-check-circle"></i> Completed</span>`
       : `<span class="list-incomplete-badge"><i class="fas fa-clock"></i> In progress</span>`;
@@ -158,6 +163,14 @@ function renderLists(lists) {
         ${it.note && !it.isLowStock ? `<span class="shop-item-note">${it.note}</span>` : ''}
       </div>
     `).join('');
+
+    const actionBtn = list.completed
+      ? `<button class="btn-secondary btn-sm" onclick="revertComplete('${list._id}')">
+           <i class="fas fa-rotate-left"></i> Mark incomplete
+         </button>`
+      : `<button class="btn-primary btn-sm" onclick="openCompleteModal('${list._id}')">
+           <i class="fas fa-check"></i> Mark complete
+         </button>`;
 
     return `
       <div class="ready-to-shop-card ${list.completed ? 'list-done' : ''}">
@@ -171,10 +184,7 @@ function renderLists(lists) {
         </div>
         <div class="shop-items-body">${rows}</div>
         <div class="list-actions">
-          <button class="btn-secondary btn-sm" onclick="toggleComplete('${list._id}', ${list.completed})">
-            <i class="fas fa-${list.completed ? 'rotate-left' : 'check'}"></i>
-            ${list.completed ? 'Mark incomplete' : 'Mark complete'}
-          </button>
+          ${actionBtn}
           <button class="btn-icon btn-del" onclick="deleteList('${list._id}')" title="Delete list">
             <i class="fas fa-trash"></i>
           </button>
@@ -184,11 +194,11 @@ function renderLists(lists) {
   }).join('');
 }
 
-async function toggleComplete(id, current) {
+async function revertComplete(id) {
   await fetch(`/api/shopping-lists/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ completed: !current }),
+    body: JSON.stringify({ completed: false }),
   });
   loadLists();
 }
@@ -199,8 +209,111 @@ async function deleteList(id) {
   loadLists();
 }
 
-// Close modal on backdrop click
+// ── Complete modal ────────────────────────────────────────────
+
+function openCompleteModal(id) {
+  _completingListId = id;
+  _receiptBase64    = null;
+  _splitMethod      = 'even';
+
+  document.getElementById('cTotalAmount').value = '';
+  const fi = document.getElementById('cReceiptFile');
+  if (fi) fi.value = '';
+  document.getElementById('cReceiptPreview').innerHTML = '';
+
+  document.getElementById('csplit-zq1').checked  = true;
+  document.getElementById('csplit-dar0').checked = true;
+  document.querySelectorAll('#cstep-2 .room-sel-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.getElementById('cCustomInputs').style.display = 'none';
+
+  document.getElementById('cstep-1').style.display = '';
+  document.getElementById('cstep-2').style.display = 'none';
+  document.getElementById('completeModal').classList.remove('hidden');
+}
+
+function closeCompleteModal() {
+  document.getElementById('completeModal').classList.add('hidden');
+}
+
+function previewReceipt(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _receiptBase64 = e.target.result;
+    document.getElementById('cReceiptPreview').innerHTML =
+      `<img src="${e.target.result}" style="max-width:100%;max-height:130px;border-radius:6px;margin-top:4px" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function cNextStep() {
+  document.getElementById('cstep-1').style.display = 'none';
+  document.getElementById('cstep-2').style.display = '';
+  updateCustomSplitInputs();
+}
+
+function cPrevStep() {
+  document.getElementById('cstep-2').style.display = 'none';
+  document.getElementById('cstep-1').style.display = '';
+}
+
+function selectSplitMethod(btn) {
+  document.querySelectorAll('#cstep-2 .room-sel-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _splitMethod = btn.dataset.split;
+  updateCustomSplitInputs();
+}
+
+function updateCustomSplitInputs() {
+  const box = document.getElementById('cCustomInputs');
+  if (_splitMethod !== 'custom') { box.style.display = 'none'; return; }
+  const people = ['zq1', 'dar0'].filter(u => document.getElementById(`csplit-${u}`)?.checked);
+  box.style.display = '';
+  box.innerHTML = people.map(u => `
+    <div class="form-group">
+      <label>${u}'s share ($)</label>
+      <input type="number" id="camt-${u}" placeholder="0.00" step="0.01" min="0" />
+    </div>
+  `).join('');
+}
+
+async function submitComplete() {
+  const total  = parseFloat(document.getElementById('cTotalAmount').value) || 0;
+  const people = ['zq1', 'dar0'].filter(u => document.getElementById(`csplit-${u}`)?.checked);
+  if (!people.length) { alert('Select at least one person to split with.'); return; }
+
+  let splitAmounts = {};
+  if (_splitMethod === 'even') {
+    const share = Math.round((total / people.length) * 100) / 100;
+    people.forEach(u => splitAmounts[u] = share);
+  } else {
+    people.forEach(u => {
+      splitAmounts[u] = parseFloat(document.getElementById(`camt-${u}`)?.value) || 0;
+    });
+  }
+
+  const btn = document.getElementById('cConfirmBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+
+  try {
+    const res = await fetch(`/api/shopping-lists/${_completingListId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ totalAmount: total, splitWith: people, splitAmounts, receipt: _receiptBase64 || null }),
+    });
+    if (!res.ok) throw new Error('Failed');
+    closeCompleteModal();
+    loadLists();
+  } catch {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm &amp; send';
+  }
+}
+
+// Close modals on backdrop click
 document.addEventListener('click', e => {
-  const modal = document.getElementById('lowStockModal');
-  if (modal && e.target === modal) closeLowStockModal();
+  if (e.target === document.getElementById('lowStockModal')) closeLowStockModal();
+  if (e.target === document.getElementById('completeModal')) closeCompleteModal();
 });

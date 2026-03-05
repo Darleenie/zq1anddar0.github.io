@@ -483,6 +483,88 @@ app.post('/api/shopping-lists', requireAuth, async (req, res) => {
     };
     const result = await db.collection('shopping_lists').insertOne(list);
     res.json({ ...list, _id: result.insertedId });
+
+    // Fire-and-forget: email the creator their list
+    (async () => {
+      const transporter = getMailTransporter();
+      if (!transporter) return;
+      const creator = await db.collection('users').findOne({ username: req.user.username });
+      if (!creator?.email) return;
+      const itemsHtml = list.items.map(i =>
+        `<li>${i.name} ×${i.qty}${i.isLowStock ? ' <em>(low stock)</em>' : ''}</li>`
+      ).join('');
+      await transporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: creator.email,
+        subject: 'Your shopping list is ready!',
+        html: `<h2>Ready to shop!</h2><p>Hi <strong>${req.user.username}</strong>, your list has been generated:</p><ul>${itemsHtml}</ul><p>Happy shopping!</p>`,
+      });
+    })().catch(err => console.error('[shopping-list-email]', err));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/shopping-lists/:id/complete', requireAuth, async (req, res) => {
+  try {
+    const { totalAmount, splitWith, splitAmounts, receipt } = req.body;
+    const list = await db.collection('shopping_lists').findOne({ _id: new ObjectId(req.params.id) });
+    if (!list) return res.status(404).json({ error: 'Not found' });
+
+    // Mark list complete
+    await db.collection('shopping_lists').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { completed: true, completedAt: new Date().toISOString() } }
+    );
+
+    // Create bill record
+    const today = new Date().toISOString().slice(0, 10);
+    const listDate = new Date(list.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    await db.collection('bills').insertOne({
+      name: `Shopping (${listDate})`,
+      amount: Number(totalAmount) || 0,
+      dueDate: today,
+      recurrence: 'none',
+      paid: true,
+      paidAt: new Date().toISOString(),
+      owner: 'shared',
+      createdAt: new Date().toISOString(),
+      splitWith: splitWith || [],
+      splitAmounts: splitAmounts || {},
+      fromShoppingList: req.params.id,
+    });
+
+    res.json({ success: true });
+
+    // Fire-and-forget: email each person their share
+    (async () => {
+      const transporter = getMailTransporter();
+      if (!transporter) return;
+      const itemsHtml = list.items.map(i =>
+        `<li>${i.name} ×${i.qty}${i.isLowStock ? ' <em>(low stock)</em>' : ''}${i.note && !i.isLowStock ? ` — ${i.note}` : ''}</li>`
+      ).join('');
+      for (const username of (splitWith || [])) {
+        const user = await db.collection('users').findOne({ username });
+        if (!user?.email) { console.log(`[shopping-complete] no email for ${username}`); continue; }
+        const share = Number((splitAmounts || {})[username] || 0);
+        const mailOpts = {
+          from: process.env.GMAIL_USER,
+          to: user.email,
+          subject: `Shopping bill — your share: $${share.toFixed(2)}`,
+          html: `<h2>Shopping Complete!</h2>
+<p>Hi <strong>${username}</strong>, a shared shopping trip has been completed.</p>
+<table style="border-collapse:collapse;margin:12px 0">
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Total</td><td><strong>$${Number(totalAmount || 0).toFixed(2)}</strong></td></tr>
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Your share</td><td><strong style="color:#2e7d32">$${share.toFixed(2)}</strong></td></tr>
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Logged by</td><td>${req.user.username}</td></tr>
+</table>
+<p><strong>Items purchased:</strong></p><ul>${itemsHtml}</ul>`,
+        };
+        if (receipt) {
+          const m = receipt.match(/^data:(image\/\w+);base64,(.+)$/);
+          if (m) mailOpts.attachments = [{ filename: 'receipt.jpg', content: m[2], encoding: 'base64', contentType: m[1] }];
+        }
+        await transporter.sendMail(mailOpts).catch(err => console.error(`[shopping-complete] email to ${username}:`, err));
+      }
+    })().catch(err => console.error('[shopping-complete]', err));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

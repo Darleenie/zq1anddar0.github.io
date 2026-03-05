@@ -2581,9 +2581,17 @@
 .btn-cart:hover { color: #a5d6a7; background: rgba(102,187,106,0.12); }
 
 /* ── Shopping & Bills shared ─────────────────────────────────── */
+.page-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 80px 16px 40px;
+}
+.page-header { margin-bottom: 24px; }
+.page-header h2 { margin: 0; font-size: 1.4rem; color: #e0e0e0; }
+
 .shop-section {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: #242424;
+  border: 1px solid #383838;
   border-radius: 12px;
   padding: 20px;
 }
@@ -2633,8 +2641,8 @@
 
 /* ── READY TO SHOP cards ─────────────────────────────────────── */
 .ready-to-shop-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 16px;
@@ -2729,8 +2737,8 @@
 }
 
 .bill-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 12px;

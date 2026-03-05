@@ -15,8 +15,15 @@
       <li><a href="/pages/dar0.html">dar0's Room</a></li>
       <li><a href="/pages/living.html">Living Room</a></li>
       <li><a href="/pages/search.html">Find My Stuff</a></li>
-      <li><a href="/pages/smart-home.html">Smart Home</a></li>
-      <li><a href="/pages/nfc-manage.html">NFC Tags</a></li>
+      <li class="nav-dropdown" id="nav-settings-dropdown">
+        <a href="#" class="nav-dropdown-toggle" onclick="toggleSettingsMenu(event)">
+          <i class="fas fa-cog"></i> Settings <i class="fas fa-chevron-down nav-caret"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/pages/smart-home.html"><i class="fas fa-house-signal"></i> Smart Home</a></li>
+          <li><a href="/pages/nfc-manage.html"><i class="fas fa-tag"></i> NFC Tags</a></li>
+        </ul>
+      </li>
       <li id="nav-shopping" style="display:none"><a href="/pages/shopping.html">Shopping</a></li>
       <li id="nav-bills"    style="display:none"><a href="/pages/bills.html">Bills</a></li>
     </ul>

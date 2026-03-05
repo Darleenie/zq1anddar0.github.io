@@ -126,6 +126,20 @@ async function submitForgot() {
   }
 }
 
+// ── Settings dropdown ────────────────────────────────────────
+function toggleSettingsMenu(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('nav-settings-dropdown')?.classList.toggle('open');
+}
+
+// Close settings dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('#nav-settings-dropdown')) {
+    document.getElementById('nav-settings-dropdown')?.classList.remove('open');
+  }
+});
+
 // Close modal on backdrop click
 document.addEventListener('click', e => {
   const modal = document.getElementById('loginModal');

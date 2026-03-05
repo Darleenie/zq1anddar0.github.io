@@ -1281,13 +1281,15 @@
   
     .nav-menu {
       position: absolute;
-      top: 60px;
+      top: 56px;
       left: 0;
       background-color: #4A2E12;
       width: 100%;
       flex-direction: column;
       align-items: center;
       display: none;
+      padding-top: 12px;
+      padding-bottom: 12px;
     }
   
     .nav-menu.active {

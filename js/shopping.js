@@ -53,6 +53,22 @@ function renderCart(items) {
   `).join('');
 }
 
+async function quickAddItem(e) {
+  e.preventDefault();
+  const name = document.getElementById('qaName').value.trim();
+  const note = document.getElementById('qaNote').value.trim();
+  const qty  = parseInt(document.getElementById('qaQty').value) || 1;
+  await fetch('/api/cart/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ name, qty, note }),
+  });
+  document.getElementById('qaName').value = '';
+  document.getElementById('qaNote').value = '';
+  document.getElementById('qaQty').value  = '1';
+  loadCart();
+}
+
 async function removeFromCart(id) {
   await fetch(`/api/cart/items/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
   loadCart();

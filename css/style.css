@@ -2611,6 +2611,23 @@ body:has(.page-content) {
 }
 .shop-section-header h3 { margin: 0; font-size: 1rem; color: #aaa; }
 
+.quick-add-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eee;
+}
+.quick-add-form input[type="text"] {
+  flex: 1;
+  min-width: 100px;
+}
+.quick-add-form input[type="number"] {
+  width: 60px;
+}
+
 .btn-text-danger {
   background: none;
   border: none;

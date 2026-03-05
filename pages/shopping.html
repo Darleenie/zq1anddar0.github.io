@@ -25,6 +25,14 @@
           <i class="fas fa-trash"></i> Clear cart
         </button>
       </div>
+      <!-- Quick add form -->
+      <form id="quickAddForm" onsubmit="quickAddItem(event)" class="quick-add-form">
+        <input type="text" id="qaName" placeholder="Item name" required />
+        <input type="text" id="qaNote" placeholder="Description (optional)" />
+        <input type="number" id="qaQty" placeholder="Qty" min="1" value="1" style="width:60px" />
+        <button type="submit" class="btn-primary btn-sm"><i class="fas fa-plus"></i> Add</button>
+      </form>
+
       <div id="cartList">
         <p class="empty-state"><i class="fas fa-shopping-basket"></i> Your cart is empty.<br>Add items from <a href="/pages/search.html">Find My Stuff</a>.</p>
       </div>

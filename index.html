@@ -3,56 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome WIFI Password: zq1anddar0</title>
+  <title>Welcome Home</title>
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#121212" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Home" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body>
-  <!-- In your HTML page -->
+<body class="home-page">
   <section>
     <div id="nav-placeholder"></div>
   </section>
 
-  <section class="section welcome">
-    <img src="assets/wifi.png" alt="WiFi Password: zq1anddar0 /n Welcome" />
+  <!-- Luxury hero greeting -->
+  <div class="home-hero" id="homeHero">
+    <div class="home-hero-tag">YOUR HOME HUB</div>
+    <h1 class="home-hero-title">Welcome Home</h1>
+    <p class="home-hero-sub">Everything you need, right at your fingertips.</p>
+    <div class="home-hero-divider"></div>
+  </div>
+
+  <!-- WiFi / Welcome card -->
+  <section class="section welcome reveal">
+    <img src="assets/wifi.png" alt="WiFi Password: zq1anddar0" />
   </section>
 
   <!-- Alexa Commands -->
-  <section class="section">
-    <h2 class="h2">Alexa Command List</h2>
-    <ul class="ul">
-      <li>"Alexa, bright the room"</li>
-      <li>"Alexa, meal time"</li>
-      <li>"Alexa, I'm leaving"</li>
-      <li>"Alexa, good night"</li>
+  <section class="section reveal">
+    <h2 class="h2"><i class="fas fa-microphone-alt" style="color:#c9a882;margin-right:8px"></i>Alexa Commands</h2>
+    <ul class="ul home-command-list">
+      <li><span class="cmd-quote">"Alexa, bright the room"</span></li>
+      <li><span class="cmd-quote">"Alexa, meal time"</span></li>
+      <li><span class="cmd-quote">"Alexa, I'm leaving"</span></li>
+      <li><span class="cmd-quote">"Alexa, good night"</span></li>
     </ul>
   </section>
 
-  <section class="section find-stuff">
-    <h2>Find My Stuff</h2>
+  <!-- Find My Stuff -->
+  <section class="section find-stuff reveal">
+    <h2><i class="fas fa-search" style="color:#c9a882;margin-right:8px"></i>Find My Stuff</h2>
     <div id="home-notif-badge" class="home-notif-badge" style="display:none"></div>
-    <input type="text" id="itemInput" placeholder="Enter item name" />
+    <input type="text" id="itemInput" placeholder="Search for an item…" />
     <div class="find-stuff-btns">
-      <button onclick="searchItem()">Search</button>
+      <button class="btn-primary" onclick="searchItem()"><i class="fas fa-search"></i> Search</button>
       <a href="pages/search.html" class="btn-view-all">View All Items</a>
     </div>
   </section>
 
-  <section class="section zq1-room room " onclick="navigateTo('pages/zq1.html')">
-    <h2>zq1's Room</h2>
+  <!-- Room label -->
+  <div class="home-rooms-label reveal">
+    <span>— Rooms —</span>
+  </div>
+
+  <!-- Room cards -->
+  <section class="section zq1-room room reveal" onclick="navigateTo('pages/zq1.html')">
+    <div class="room-overlay">
+      <h2>zq1's Room</h2>
+      <span class="room-enter">Enter <i class="fas fa-arrow-right"></i></span>
+    </div>
   </section>
 
-  <section class=" section dar0-room room" onclick="navigateTo('pages/dar0.html')">
-    <h2>dar0's Room</h2>
+  <section class="section dar0-room room reveal" onclick="navigateTo('pages/dar0.html')">
+    <div class="room-overlay">
+      <h2>dar0's Room</h2>
+      <span class="room-enter">Enter <i class="fas fa-arrow-right"></i></span>
+    </div>
   </section>
 
-  <section class=" section living-room room" onclick="navigateTo('pages/living.html')">
-    <h2>Living Room</h2>
+  <section class="section living-room room reveal" onclick="navigateTo('pages/living.html')">
+    <div class="room-overlay">
+      <h2>Living Room</h2>
+      <span class="room-enter">Enter <i class="fas fa-arrow-right"></i></span>
+    </div>
   </section>
+
+  <div style="height: 40px"></div>
 
   <script src="/js/auth.js"></script>
   <script src="js/search.js"></script>
@@ -61,7 +88,7 @@
       window.location.href = url;
     }
 
-    // Show alert count badge on home page
+    // Alert badge
     document.addEventListener('DOMContentLoaded', () => {
       const items = JSON.parse(localStorage.getItem('inventoryItems') || '[]');
       const CONSUMABLE = ['food', 'medicine', 'cleaning'];
@@ -80,6 +107,22 @@
         badge.style.display = '';
         badge.textContent = alertCount + ' alert' + (alertCount !== 1 ? 's' : '') + ' — check your inventory';
       }
+
+      // Scroll reveal with staggered delay
+      const revealEls = document.querySelectorAll('.reveal');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+
+      revealEls.forEach((el, i) => {
+        el.style.transitionDelay = (i * 80) + 'ms';
+        observer.observe(el);
+      });
     });
   </script>
   <script src="js/nav.js" defer></script>

@@ -3013,3 +3013,220 @@ body:has(.page-content) {
 }
 .empty-state i { display: block; font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
 .empty-state a { color: #7C4B2A; }
+
+/* ============================================================
+   HOME PAGE — LUXURY ANIMATIONS
+   ============================================================ */
+
+/* ── Keyframes ───────────────────────────────────────────────── */
+@keyframes luxuryFadeUp {
+  from { opacity: 0; transform: translateY(36px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroTagSlide {
+  from { opacity: 0; letter-spacing: 0.25em; }
+  to   { opacity: 1; letter-spacing: 0.18em; }
+}
+
+@keyframes heroDivider {
+  from { width: 0; opacity: 0; }
+  to   { width: 60px; opacity: 1; }
+}
+
+@keyframes shimmerPulse {
+  0%, 100% { box-shadow: 0 2px 12px rgba(120,80,40,0.09); }
+  50%       { box-shadow: 0 6px 28px rgba(160,100,40,0.18); }
+}
+
+/* ── Scroll reveal base state ────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Hero section ────────────────────────────────────────────── */
+.home-hero {
+  text-align: center;
+  padding: 120px 24px 8px;
+  animation: luxuryFadeUp 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+.home-hero-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #c9a882;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  animation: heroTagSlide 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.home-hero-title {
+  font-size: clamp(2.2rem, 8vw, 3.6rem);
+  font-weight: 700;
+  color: #2c1f14;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+
+.home-hero-sub {
+  font-size: 1rem;
+  color: #9a7660;
+  font-weight: 400;
+  margin-bottom: 28px;
+}
+
+.home-hero-divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #c9a882, #7C4B2A);
+  border-radius: 2px;
+  margin: 0 auto;
+  animation: heroDivider 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
+}
+
+/* ── Room cards — luxury overlay ─────────────────────────────── */
+.room {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.room:hover {
+  transform: translateY(-6px) scale(1.015) !important;
+  box-shadow: 0 20px 48px rgba(80, 40, 10, 0.22) !important;
+  background-color: transparent !important;
+}
+
+.room-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    to top,
+    rgba(30, 15, 5, 0.72) 0%,
+    rgba(30, 15, 5, 0.28) 50%,
+    rgba(30, 15, 5, 0.10) 100%
+  );
+  transition: background 0.45s ease;
+  padding: 24px;
+  gap: 10px;
+}
+
+.room:hover .room-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(30, 15, 5, 0.80) 0%,
+    rgba(30, 15, 5, 0.38) 60%,
+    rgba(30, 15, 5, 0.15) 100%
+  );
+}
+
+.room-overlay h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  transform: translateY(6px);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.room:hover .room-overlay h2 {
+  transform: translateY(0);
+}
+
+.room-enter {
+  color: #f5deb3;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease 0.05s, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.room:hover .room-enter {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Alexa command list ───────────────────────────────────────── */
+.home-command-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  margin-top: 12px;
+}
+
+.cmd-quote {
+  display: inline-block;
+  background: #f5ede3;
+  color: #5e3820;
+  border-left: 3px solid #c9a882;
+  border-radius: 0 8px 8px 0;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* ── Rooms section label ─────────────────────────────────────── */
+.home-rooms-label {
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: #c9a882;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 12px 0 -8px;
+}
+
+/* ── Pulsing welcome card ────────────────────────────────────── */
+.home-page .section.welcome {
+  animation: shimmerPulse 4s ease-in-out 1.5s infinite;
+}
+
+/* ── Find My Stuff input on home ─────────────────────────────── */
+.home-page .find-stuff input {
+  padding: 12px 16px;
+  border: 1px solid #ddc9b2;
+  border-radius: 10px;
+  background: #fffdf9;
+  color: #2c1f14;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  width: 85%;
+  max-width: 340px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin: 10px 0;
+}
+
+.home-page .find-stuff input:focus {
+  border-color: #7C4B2A;
+  box-shadow: 0 0 0 3px rgba(124,75,42,0.12);
+}
+
+@media (max-width: 600px) {
+  .home-hero { padding-top: 100px; }
+  .home-hero-title { font-size: 2.2rem; }
+  .room-overlay h2 { font-size: 1.2rem; }
+}

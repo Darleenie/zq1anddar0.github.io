@@ -162,14 +162,20 @@ function renderLists(lists) {
     const badge = list.completed
       ? `<span class="list-complete-badge"><i class="fas fa-check-circle"></i> Completed</span>`
       : `<span class="list-incomplete-badge"><i class="fas fa-clock"></i> In progress</span>`;
-    const rows = list.items.map(it => `
-      <div class="shop-item-row">
-        <span class="shop-item-name">${it.name}</span>
-        <span class="shop-item-qty">×${it.qty}</span>
-        ${it.isLowStock ? `<span class="low-stock-badge">Low stock</span>` : ''}
-        ${it.note && !it.isLowStock ? `<span class="shop-item-note">${it.note}</span>` : ''}
-      </div>
-    `).join('');
+    const checks = getChecklist(list._id);
+    const rows = list.items.map((it, idx) => {
+      const checked = !!checks[idx];
+      return `
+        <div class="shop-item-row${checked ? ' item-checked' : ''}" data-list="${list._id}" data-idx="${idx}">
+          <input type="checkbox" class="item-check" ${checked ? 'checked' : ''}
+                 onchange="toggleItemCheck('${list._id}', ${idx}, this)" />
+          <span class="shop-item-name">${it.name}</span>
+          <span class="shop-item-qty">×${it.qty}</span>
+          ${it.isLowStock ? `<span class="low-stock-badge">Low stock</span>` : ''}
+          ${it.note && !it.isLowStock ? `<span class="shop-item-note">${it.note}</span>` : ''}
+        </div>
+      `;
+    }).join('');
 
     const actionBtn = list.completed
       ? `<button class="btn-secondary btn-sm" onclick="revertComplete('${list._id}')">
@@ -199,6 +205,19 @@ function renderLists(lists) {
       </div>
     `;
   }).join('');
+}
+
+function getChecklist(listId) {
+  try { return JSON.parse(localStorage.getItem(`shop_check_${listId}`)) || []; }
+  catch { return []; }
+}
+
+function toggleItemCheck(listId, idx, checkbox) {
+  const checks  = getChecklist(listId);
+  checks[idx]   = checkbox.checked;
+  localStorage.setItem(`shop_check_${listId}`, JSON.stringify(checks));
+  const row = checkbox.closest('.shop-item-row');
+  if (row) row.classList.toggle('item-checked', checkbox.checked);
 }
 
 async function revertComplete(id) {

@@ -1,10 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 * {
     box-sizing: border-box;
     justify-content: center;
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+
+body {
+  background: #faf7f2;
+  color: #2c1f14;
+}
   
   .body {
     scroll-behavior: smooth;
@@ -19,11 +26,12 @@
     align-items: center;
     height: 50vh;
     text-align: center;
-    background-color: #fff;
+    background-color: #fffdf9;
     margin: 100px auto 20px;
     max-width: 800px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(120,80,40,0.09);
+    border: 1px solid #eedeca;
   }
   .h2 {
     text-align: center;
@@ -285,7 +293,8 @@
 
 .inventory-header h1 {
   font-size: 1.6em;
-  color: #333;
+  color: #2c1f14;
+  font-weight: 700;
 }
 
 /* Search + filter bar */
@@ -300,14 +309,16 @@
   width: 100%;
   padding: 12px 16px;
   font-size: 1em;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid #ddc9b2;
+  border-radius: 10px;
   outline: none;
+  background: #fffdf9;
+  color: #2c1f14;
   transition: border-color 0.2s;
 }
 
 .inventory-controls input[type="text"]:focus {
-  border-color: #333;
+  border-color: #7C4B2A;
 }
 
 .filter-buttons {
@@ -318,23 +329,24 @@
 
 .filter-btn {
   padding: 6px 14px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddc9b2;
   border-radius: 20px;
-  background: #fff;
+  background: #fffdf9;
   cursor: pointer;
   font-size: 0.85em;
+  color: #5e3820;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .filter-btn:hover {
-  background: #f0f0f0;
+  background: #f5ede3;
 }
 
 .filter-btn.active {
-  background: #333;
+  background: #7C4B2A;
   color: #fff;
-  border-color: #333;
+  border-color: #7C4B2A;
 }
 
 /* Item grid */
@@ -348,7 +360,7 @@
   grid-column: 1 / -1;
   text-align: center;
   padding: 60px 20px;
-  color: #888;
+  color: #9a7660;
 }
 
 .no-items i {
@@ -359,9 +371,10 @@
 
 /* Item card */
 .item-card {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: #fffdf9;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(120,80,40,0.08);
+  border: 1px solid #eedeca;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -369,7 +382,7 @@
 }
 
 .item-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 5px 18px rgba(120,80,40,0.14);
 }
 
 .item-card.card-danger {
@@ -388,7 +401,7 @@
 .card-img-wrap {
   width: 100%;
   height: 160px;
-  background: #f5f5f5;
+  background: #f5ede3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -408,7 +421,7 @@
 
 .card-img-icon {
   font-size: 2.5em;
-  color: #bbb;
+  color: #c9a882;
 }
 
 .card-body {
@@ -463,12 +476,12 @@
   font-size: 1em;
   font-weight: 700;
   margin: 0 0 4px;
-  color: #222;
+  color: #2c1f14;
 }
 
 .item-desc {
   font-size: 0.82em;
-  color: #666;
+  color: #7a5c44;
   margin: 0 0 6px;
   line-height: 1.4;
 }
@@ -477,7 +490,7 @@
 .item-qty,
 .item-exp {
   font-size: 0.82em;
-  color: #555;
+  color: #6b4f3a;
   margin: 2px 0;
 }
 
@@ -544,12 +557,13 @@
 
 /* Import CSV button */
 .btn-import {
-  background: #fff;
-  color: #5C3D1E;
-  border: 2px solid #5C3D1E;
+  background: #fffdf9;
+  color: #7C4B2A;
+  border: 2px solid #7C4B2A;
   padding: 10px 18px;
   border-radius: 8px;
   font-size: 0.95em;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -558,18 +572,19 @@
 }
 
 .btn-import:hover {
-  background: #5C3D1E;
+  background: #7C4B2A;
   color: #fff;
 }
 
 /* Add Item button */
 .btn-add {
-  background: #333;
+  background: #7C4B2A;
   color: #fff;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 0.95em;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -578,7 +593,7 @@
 }
 
 .btn-add:hover {
-  background: #555;
+  background: #5e3820;
 }
 
 /* Notification banner */
@@ -652,14 +667,15 @@
 }
 
 .modal-content {
-  background: #fff;
-  border-radius: 12px;
+  background: #fffdf9;
+  border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   padding: 24px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 40px rgba(60,30,10,0.18);
+  border: 1px solid #eedeca;
 }
 
 .modal-sm {
@@ -676,7 +692,7 @@
 .modal-header h2,
 .modal-header h3 {
   font-size: 1.2em;
-  color: #222;
+  color: #2c1f14;
 }
 
 .modal-close {
@@ -710,7 +726,7 @@
   display: block;
   font-size: 0.85em;
   font-weight: 600;
-  color: #444;
+  color: #5e3820;
   margin-bottom: 5px;
 }
 
@@ -725,10 +741,12 @@
 .form-group textarea {
   width: 100%;
   padding: 9px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddc9b2;
   border-radius: 7px;
   font-size: 0.92em;
   outline: none;
+  background: #fffdf9;
+  color: #2c1f14;
   transition: border-color 0.2s;
   font-family: inherit;
 }
@@ -736,7 +754,7 @@
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #333;
+  border-color: #7C4B2A;
 }
 
 .img-upload-area {
@@ -819,33 +837,35 @@
 }
 
 .btn-primary {
-  background: #333;
+  background: #7C4B2A;
   color: #fff;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 0.95em;
   cursor: pointer;
+  font-weight: 600;
   transition: background 0.2s;
 }
 
 .btn-primary:hover {
-  background: #555;
+  background: #5e3820;
 }
 
 .btn-secondary {
-  background: #f0f0f0;
-  color: #333;
-  border: 1px solid #ccc;
+  background: #f5ede3;
+  color: #5e3820;
+  border: 1px solid #ddc9b2;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 0.95em;
   cursor: pointer;
+  font-weight: 500;
   transition: background 0.2s;
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: #ead8c4;
 }
 
 .btn-danger {
@@ -1223,10 +1243,10 @@
 
 .room-sel-btn {
   padding: 8px 14px;
-  border: 2px solid #ddd;
+  border: 2px solid #ddc9b2;
   border-radius: 8px;
-  background: #f9f9f9;
-  color: #555;
+  background: #fffdf9;
+  color: #5e3820;
   font-size: 0.87rem;
   cursor: pointer;
   transition: all 0.15s;
@@ -1238,13 +1258,14 @@
 }
 
 .room-sel-btn:hover {
-  border-color: #5C3D1E;
-  color: #5C3D1E;
+  border-color: #7C4B2A;
+  color: #7C4B2A;
+  background: #f5ede3;
 }
 
 .room-sel-btn.active {
-  border-color: #5C3D1E;
-  background: #5C3D1E;
+  border-color: #7C4B2A;
+  background: #7C4B2A;
   color: #fff;
   font-weight: 600;
 }
@@ -2640,19 +2661,20 @@
   min-height: calc(100vh - 60px);
 }
 
-/* Give shopping/bills pages a light canvas */
+/* Give shopping/bills pages a warm canvas */
 body:has(.page-content) {
-  background: #f2f2f2;
+  background: #faf7f2;
 }
 
 .page-header { margin-bottom: 24px; }
-.page-header h2 { margin: 0; font-size: 1.4rem; color: #000; }
+.page-header h2 { margin: 0; font-size: 1.4rem; color: #2c1f14; font-weight: 700; }
 
 .shop-section {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
+  background: #fffdf9;
+  border: 1px solid #eedeca;
+  border-radius: 16px;
   padding: 20px;
+  box-shadow: 0 2px 10px rgba(120,80,40,0.06);
 }
 .shop-section-header {
   display: flex;
@@ -2660,7 +2682,7 @@ body:has(.page-content) {
   justify-content: space-between;
   margin-bottom: 16px;
 }
-.shop-section-header h3 { margin: 0; font-size: 1rem; color: #aaa; }
+.shop-section-header h3 { margin: 0; font-size: 1rem; color: #7a5c44; font-weight: 600; }
 
 .quick-add-form {
   display: flex;
@@ -2709,19 +2731,20 @@ body:has(.page-content) {
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid #eedeca;
 }
 .shop-cart-item:last-child { border-bottom: none; }
-.shop-cart-name { flex: 1; color: #555; font-size: 0.9rem; }
-.shop-cart-qty  { color: #aaa; font-size: 0.85rem; min-width: 28px; text-align: right; }
+.shop-cart-name { flex: 1; color: #3a2010; font-size: 0.9rem; font-weight: 500; }
+.shop-cart-qty  { color: #8a6650; font-size: 0.85rem; min-width: 28px; text-align: right; }
 
 /* ── READY TO SHOP cards ─────────────────────────────────────── */
 .ready-to-shop-card {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  background: #fffdf9;
+  border: 1px solid #eedeca;
+  border-radius: 14px;
   padding: 16px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 6px rgba(120,80,40,0.06);
 }
 .ready-to-shop-card.list-done { opacity: 0.65; }
 
@@ -2741,7 +2764,7 @@ body:has(.page-content) {
   display: flex;
   gap: 16px;
   font-size: 0.78rem;
-  color: #aaa;
+  color: #9a7660;
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
@@ -2765,9 +2788,9 @@ body:has(.page-content) {
   cursor: pointer;
   accent-color: #66bb6a;
 }
-.shop-item-name { flex: 1; color: #555; }
-.shop-item-qty  { color: #aaa; min-width: 28px; text-align: right; }
-.shop-item-note { color: #bbb; font-size: 0.78rem; font-style: italic; }
+.shop-item-name { flex: 1; color: #3a2010; font-weight: 500; }
+.shop-item-qty  { color: #8a6650; min-width: 28px; text-align: right; }
+.shop-item-note { color: #b89880; font-size: 0.78rem; font-style: italic; }
 
 /* Checked item state */
 .shop-item-row.item-checked { opacity: 0.45; }
@@ -2828,25 +2851,26 @@ body:has(.page-content) {
   gap: 12px;
 }
 
-/* Light-theme input overrides for shopping/bills pages */
+/* Warm-theme input overrides for shopping/bills pages */
 .page-content input,
 .page-content select {
-  background: #f8f8f8;
-  border: 1px solid #ccc;
-  color: #333;
+  background: #fffdf9;
+  border: 1px solid #ddc9b2;
+  color: #2c1f14;
 }
-.page-content input::placeholder { color: #bbb; }
-.page-content label { color: #777; }
+.page-content input::placeholder { color: #b89880; }
+.page-content label { color: #5e3820; }
 
 .bill-card {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  background: #fffdf9;
+  border: 1px solid #eedeca;
+  border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 12px;
+  box-shadow: 0 1px 6px rgba(120,80,40,0.06);
   transition: border-color 0.15s;
 }
-.bill-card.bill-overdue { border-color: #e53935; background: rgba(229,57,53,0.06); }
+.bill-card.bill-overdue { border-color: #e53935; background: rgba(229,57,53,0.05); }
 .bill-card.bill-paid    { opacity: 0.55; }
 
 .bill-top {
@@ -2855,15 +2879,15 @@ body:has(.page-content) {
   align-items: center;
   margin-bottom: 8px;
 }
-.bill-name   { font-weight: 600; color: #333; font-size: 0.95rem; }
-.bill-amount { font-weight: 700; color: #66bb6a; font-size: 1rem; }
+.bill-name   { font-weight: 700; color: #2c1f14; font-size: 0.95rem; }
+.bill-amount { font-weight: 700; color: #4a9e5c; font-size: 1rem; }
 
 .bill-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   font-size: 0.78rem;
-  color: #aaa;
+  color: #9a7660;
   margin-bottom: 4px;
 }
 
@@ -2957,9 +2981,20 @@ body:has(.page-content) {
 .price-input {
   width: 72px;
   padding: 3px 6px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddc9b2;
   border-radius: 5px;
   font-size: 0.82rem;
-  background: #fff;
-  color: #333;
+  background: #fffdf9;
+  color: #2c1f14;
 }
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: #9a7660;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+.empty-state i { display: block; font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
+.empty-state a { color: #7C4B2A; }

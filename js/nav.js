@@ -126,6 +126,13 @@ async function submitForgot() {
   }
 }
 
+// ── Rooms dropdown ───────────────────────────────────────────
+function toggleRoomsMenu(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('nav-rooms-dropdown')?.classList.toggle('open');
+}
+
 // ── Settings dropdown ────────────────────────────────────────
 function toggleSettingsMenu(e) {
   e.preventDefault();
@@ -133,10 +140,13 @@ function toggleSettingsMenu(e) {
   document.getElementById('nav-settings-dropdown')?.classList.toggle('open');
 }
 
-// Close settings dropdown when clicking outside
+// Close dropdowns when clicking outside
 document.addEventListener('click', e => {
   if (!e.target.closest('#nav-settings-dropdown')) {
     document.getElementById('nav-settings-dropdown')?.classList.remove('open');
+  }
+  if (!e.target.closest('#nav-rooms-dropdown')) {
+    document.getElementById('nav-rooms-dropdown')?.classList.remove('open');
   }
 });
 

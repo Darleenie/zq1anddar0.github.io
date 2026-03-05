@@ -11,9 +11,16 @@
       </button>
     <ul class="nav-menu" id="nav-menu">
       <li><a href="/index.html">Home</a></li>
-      <li><a href="/pages/zq1.html">zq1's Room</a></li>
-      <li><a href="/pages/dar0.html">dar0's Room</a></li>
-      <li><a href="/pages/living.html">Living Room</a></li>
+      <li class="nav-dropdown" id="nav-rooms-dropdown">
+        <a href="#" class="nav-dropdown-toggle" onclick="toggleRoomsMenu(event)">
+          <i class="fas fa-door-open"></i> Rooms <i class="fas fa-chevron-down nav-caret"></i>
+        </a>
+        <ul class="nav-submenu">
+          <li><a href="/pages/zq1.html"><i class="fas fa-user"></i> zq1's Room</a></li>
+          <li><a href="/pages/dar0.html"><i class="fas fa-user"></i> dar0's Room</a></li>
+          <li><a href="/pages/living.html"><i class="fas fa-couch"></i> Living Room</a></li>
+        </ul>
+      </li>
       <li><a href="/pages/search.html">Find My Stuff</a></li>
       <li class="nav-dropdown" id="nav-settings-dropdown">
         <a href="#" class="nav-dropdown-toggle" onclick="toggleSettingsMenu(event)">

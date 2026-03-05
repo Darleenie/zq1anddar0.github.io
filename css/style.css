@@ -2585,13 +2585,21 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 80px 16px 40px;
+  /* light background so black heading is readable */
+  min-height: calc(100vh - 60px);
 }
+
+/* Give shopping/bills pages a light canvas */
+body:has(.page-content) {
+  background: #f2f2f2;
+}
+
 .page-header { margin-bottom: 24px; }
-.page-header h2 { margin: 0; font-size: 1.4rem; color: #e0e0e0; }
+.page-header h2 { margin: 0; font-size: 1.4rem; color: #000; }
 
 .shop-section {
-  background: #242424;
-  border: 1px solid #383838;
+  background: #fff;
+  border: 1px solid #ddd;
   border-radius: 12px;
   padding: 20px;
 }
@@ -2601,7 +2609,7 @@
   justify-content: space-between;
   margin-bottom: 16px;
 }
-.shop-section-header h3 { margin: 0; font-size: 1rem; color: #e0e0e0; }
+.shop-section-header h3 { margin: 0; font-size: 1rem; color: #aaa; }
 
 .btn-text-danger {
   background: none;
@@ -2636,13 +2644,13 @@
   border-bottom: 1px solid #2a2a2a;
 }
 .shop-cart-item:last-child { border-bottom: none; }
-.shop-cart-name { flex: 1; color: #e0e0e0; font-size: 0.9rem; }
+.shop-cart-name { flex: 1; color: #555; font-size: 0.9rem; }
 .shop-cart-qty  { color: #aaa; font-size: 0.85rem; min-width: 28px; text-align: right; }
 
 /* ── READY TO SHOP cards ─────────────────────────────────────── */
 .ready-to-shop-card {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: #fafafa;
+  border: 1px solid #ddd;
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 16px;
@@ -2665,7 +2673,7 @@
   display: flex;
   gap: 16px;
   font-size: 0.78rem;
-  color: #888;
+  color: #aaa;
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
@@ -2681,9 +2689,9 @@
   font-size: 0.87rem;
 }
 .shop-item-row:last-child { border-bottom: none; }
-.shop-item-name { flex: 1; color: #e0e0e0; }
+.shop-item-name { flex: 1; color: #555; }
 .shop-item-qty  { color: #aaa; min-width: 28px; text-align: right; }
-.shop-item-note { color: #888; font-size: 0.78rem; font-style: italic; }
+.shop-item-note { color: #bbb; font-size: 0.78rem; font-style: italic; }
 
 .list-complete-badge {
   background: rgba(102,187,106,0.15);
@@ -2721,9 +2729,9 @@
   align-items: center;
   gap: 8px;
   padding: 7px 0;
-  border-bottom: 1px solid #252525;
+  border-bottom: 1px solid #eee;
   font-size: 0.88rem;
-  color: #e0e0e0;
+  color: #555;
   cursor: pointer;
 }
 .low-stock-row:last-child { border-bottom: none; }
@@ -2736,9 +2744,19 @@
   gap: 12px;
 }
 
+/* Light-theme input overrides for shopping/bills pages */
+.page-content input,
+.page-content select {
+  background: #f8f8f8;
+  border: 1px solid #ccc;
+  color: #333;
+}
+.page-content input::placeholder { color: #bbb; }
+.page-content label { color: #777; }
+
 .bill-card {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: #fafafa;
+  border: 1px solid #ddd;
   border-radius: 10px;
   padding: 14px 16px;
   margin-bottom: 12px;
@@ -2753,7 +2771,7 @@
   align-items: center;
   margin-bottom: 8px;
 }
-.bill-name   { font-weight: 600; color: #e0e0e0; font-size: 0.95rem; }
+.bill-name   { font-weight: 600; color: #333; font-size: 0.95rem; }
 .bill-amount { font-weight: 700; color: #66bb6a; font-size: 1rem; }
 
 .bill-meta {
@@ -2761,7 +2779,7 @@
   flex-wrap: wrap;
   gap: 10px;
   font-size: 0.78rem;
-  color: #888;
+  color: #aaa;
   margin-bottom: 4px;
 }
 

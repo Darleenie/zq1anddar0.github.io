@@ -74,33 +74,91 @@
   <div id="completeModal" class="modal hidden">
     <div class="modal-content modal-sm">
 
-      <!-- Step 1: Receipt + total -->
+      <!-- Step 1: Receipt + mode selection -->
       <div id="cstep-1">
         <div class="modal-header">
           <h3><i class="fas fa-receipt"></i> Complete Shopping</h3>
           <button class="modal-close" onclick="closeCompleteModal()">&times;</button>
         </div>
         <div class="form-group" style="margin-top:16px">
-          <label for="cTotalAmount">Total amount ($)</label>
-          <input type="number" id="cTotalAmount" placeholder="0.00" step="0.01" min="0" />
-        </div>
-        <div class="form-group">
           <label>Receipt photo <span style="color:#aaa;font-size:0.78rem">(optional)</span></label>
           <input type="file" id="cReceiptFile" accept="image/*" onchange="previewReceipt(this)" />
           <div id="cReceiptPreview" style="margin-top:8px"></div>
         </div>
+        <div class="form-group">
+          <label>Mode</label>
+          <div class="room-selector" style="margin-top:8px">
+            <button type="button" class="room-sel-btn active" data-mode="bot" onclick="selectMode(this)">
+              <i class="fas fa-robot"></i> Bot Assist
+            </button>
+            <button type="button" class="room-sel-btn" data-mode="manual" onclick="selectMode(this)">
+              <i class="fas fa-pen"></i> Manual
+            </button>
+          </div>
+          <p id="modeDesc" style="font-size:0.78rem;color:#aaa;margin-top:6px">
+            Enter price per item — bot calculates totals &amp; generates a CSV.
+          </p>
+        </div>
         <div class="form-actions">
           <button class="btn-secondary" onclick="closeCompleteModal()">Cancel</button>
-          <button class="btn-primary" onclick="cNextStep()">Next <i class="fas fa-arrow-right"></i></button>
+          <button class="btn-primary" onclick="cStep1Next()">Next <i class="fas fa-arrow-right"></i></button>
         </div>
       </div>
 
-      <!-- Step 2: Split -->
-      <div id="cstep-2" style="display:none">
+      <!-- Step 2a: Bot Assist — prompt + CSV paste -->
+      <div id="cstep-2-bot" style="display:none">
         <div class="modal-header">
-          <h3><i class="fas fa-users"></i> Split Bill</h3>
+          <h3><i class="fas fa-robot"></i> Bot Assist</h3>
+        </div>
+        <ol class="bot-steps">
+          <li>Copy the prompt below</li>
+          <li>Open your AI chatbot, attach the receipt photo, and send the prompt</li>
+          <li>Paste the CSV it returns into the box below</li>
+        </ol>
+        <div class="form-group">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <label style="margin:0">Generated prompt</label>
+            <button class="btn-copy" id="copyPromptBtn" onclick="copyPrompt()">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+          <textarea id="cPromptText" readonly rows="6" class="bot-prompt-box"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="cCsvInput">Paste CSV output here</label>
+          <textarea id="cCsvInput" rows="5" placeholder="Item,Qty,Unit Price,Total&#10;Milk,2,3.50,7.00&#10;..."></textarea>
+        </div>
+        <div id="cBotParseError" style="display:none;color:#e57373;font-size:0.82rem;margin-bottom:8px"></div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="showCStep('cstep-1')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-primary" onclick="cBotNext()">Parse &amp; Review <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 2b: Manual — total amount -->
+      <div id="cstep-2-manual" style="display:none">
+        <div class="modal-header">
+          <h3><i class="fas fa-pen"></i> Enter Total</h3>
         </div>
         <div class="form-group" style="margin-top:16px">
+          <label for="cTotalAmount">Total amount ($)</label>
+          <input type="number" id="cTotalAmount" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="showCStep('cstep-1')"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-primary" onclick="cManualNext()">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 3: Review CSV + Split -->
+      <div id="cstep-3" style="display:none">
+        <div class="modal-header">
+          <h3><i class="fas fa-eye"></i> Review &amp; Split</h3>
+        </div>
+        <!-- CSV preview table (bot mode only) -->
+        <div id="cCsvPreview" style="display:none;margin:12px 0;max-height:200px;overflow-y:auto"></div>
+        <div id="cTotalSummary" style="font-size:0.9rem;font-weight:600;color:#333;margin:8px 0 12px"></div>
+        <div class="form-group">
           <label>Who is splitting?</label>
           <div style="display:flex;gap:16px;margin-top:8px">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem">
@@ -124,7 +182,9 @@
         </div>
         <div id="cCustomInputs" style="display:none"></div>
         <div class="form-actions">
-          <button class="btn-secondary" onclick="cPrevStep()"><i class="fas fa-arrow-left"></i> Back</button>
+          <button class="btn-secondary" id="cStep3BackBtn" onclick="cStep3Back()">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
           <button class="btn-primary" id="cConfirmBtn" onclick="submitComplete()">
             <i class="fas fa-paper-plane"></i> Confirm &amp; send
           </button>

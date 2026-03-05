@@ -503,9 +503,18 @@ app.post('/api/shopping-lists', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+function buildCSV(pricedItems, total) {
+  const rows = ['"Item","Qty","Unit Price","Line Total"'];
+  for (const it of pricedItems) {
+    rows.push(`"${it.name}",${it.qty},${Number(it.unitPrice || 0).toFixed(2)},${Number(it.lineTotal || 0).toFixed(2)}`);
+  }
+  rows.push(`"Grand Total",,,${Number(total).toFixed(2)}`);
+  return rows.join('\r\n');
+}
+
 app.post('/api/shopping-lists/:id/complete', requireAuth, async (req, res) => {
   try {
-    const { totalAmount, splitWith, splitAmounts, receipt } = req.body;
+    const { mode, pricedItems, totalAmount, splitWith, splitAmounts, receipt } = req.body;
     const list = await db.collection('shopping_lists').findOne({ _id: new ObjectId(req.params.id) });
     if (!list) return res.status(404).json({ error: 'Not found' });
 
@@ -538,13 +547,28 @@ app.post('/api/shopping-lists/:id/complete', requireAuth, async (req, res) => {
     (async () => {
       const transporter = getMailTransporter();
       if (!transporter) return;
-      const itemsHtml = list.items.map(i =>
-        `<li>${i.name} ×${i.qty}${i.isLowStock ? ' <em>(low stock)</em>' : ''}${i.note && !i.isLowStock ? ` — ${i.note}` : ''}</li>`
-      ).join('');
+
+      // Build CSV for bot-assist mode
+      const csvContent = (mode === 'bot' && pricedItems?.length)
+        ? buildCSV(pricedItems, totalAmount)
+        : null;
+
+      // Build items HTML for email body
+      const itemsHtml = (mode === 'bot' && pricedItems?.length)
+        ? pricedItems.map(i =>
+            `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">$${Number(i.unitPrice||0).toFixed(2)}</td><td style="text-align:right">$${Number(i.lineTotal||0).toFixed(2)}</td></tr>`
+          ).join('')
+        : list.items.map(i =>
+            `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td colspan="2" style="color:#aaa">—</td></tr>`
+          ).join('');
+
+      const itemTableHeader = `<tr style="background:#f5f5f5"><th style="text-align:left;padding:4px 8px">Item</th><th style="padding:4px 8px">Qty</th><th style="padding:4px 8px">Unit $</th><th style="padding:4px 8px">Total</th></tr>`;
+
       for (const username of (splitWith || [])) {
         const user = await db.collection('users').findOne({ username });
         if (!user?.email) { console.log(`[shopping-complete] no email for ${username}`); continue; }
         const share = Number((splitAmounts || {})[username] || 0);
+
         const mailOpts = {
           from: process.env.GMAIL_USER,
           to: user.email,
@@ -552,16 +576,24 @@ app.post('/api/shopping-lists/:id/complete', requireAuth, async (req, res) => {
           html: `<h2>Shopping Complete!</h2>
 <p>Hi <strong>${username}</strong>, a shared shopping trip has been completed.</p>
 <table style="border-collapse:collapse;margin:12px 0">
-  <tr><td style="padding:4px 16px 4px 0;color:#666">Total</td><td><strong>$${Number(totalAmount || 0).toFixed(2)}</strong></td></tr>
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Total</td><td><strong>$${Number(totalAmount||0).toFixed(2)}</strong></td></tr>
   <tr><td style="padding:4px 16px 4px 0;color:#666">Your share</td><td><strong style="color:#2e7d32">$${share.toFixed(2)}</strong></td></tr>
   <tr><td style="padding:4px 16px 4px 0;color:#666">Logged by</td><td>${req.user.username}</td></tr>
 </table>
-<p><strong>Items purchased:</strong></p><ul>${itemsHtml}</ul>`,
+<p><strong>Items purchased:</strong></p>
+<table style="border-collapse:collapse;width:100%;font-size:0.9rem">${itemTableHeader}${itemsHtml}</table>
+${csvContent ? '<p style="color:#888;font-size:0.8rem">A CSV breakdown is attached.</p>' : ''}`,
+          attachments: [],
         };
+
         if (receipt) {
           const m = receipt.match(/^data:(image\/\w+);base64,(.+)$/);
-          if (m) mailOpts.attachments = [{ filename: 'receipt.jpg', content: m[2], encoding: 'base64', contentType: m[1] }];
+          if (m) mailOpts.attachments.push({ filename: 'receipt.jpg', content: m[2], encoding: 'base64', contentType: m[1] });
         }
+        if (csvContent) {
+          mailOpts.attachments.push({ filename: 'shopping.csv', content: csvContent, contentType: 'text/csv' });
+        }
+
         await transporter.sendMail(mailOpts).catch(err => console.error(`[shopping-complete] email to ${username}:`, err));
       }
     })().catch(err => console.error('[shopping-complete]', err));

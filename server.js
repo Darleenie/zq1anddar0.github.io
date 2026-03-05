@@ -642,10 +642,37 @@ app.post('/api/bills', requireAuth, async (req, res) => {
 app.put('/api/bills/:id', requireAuth, async (req, res) => {
   try {
     const { _id, ...updates } = req.body;
+    const currentBill = await db.collection('bills').findOne({ _id: new ObjectId(req.params.id) });
+
+    // Reset reminderSent if amount or dueDate changes so reminder fires again
+    if ('amount' in updates || 'dueDate' in updates) updates.reminderSent = false;
+
     await db.collection('bills').updateOne(
       { _id: new ObjectId(req.params.id) },
       { $set: updates }
     );
+
+    // Auto-create next cycle when a recurring bill is first marked paid
+    if (updates.paid && currentBill?.recurrence && currentBill.recurrence !== 'none' && !currentBill.paid) {
+      const nextDue = new Date(currentBill.dueDate + 'T00:00:00');
+      if (currentBill.recurrence === 'monthly') nextDue.setMonth(nextDue.getMonth() + 1);
+      else nextDue.setFullYear(nextDue.getFullYear() + 1);
+      await db.collection('bills').insertOne({
+        name:         currentBill.name,
+        amount:       currentBill.amount,   // carries over as starting point; user can edit
+        dueDate:      nextDue.toISOString().slice(0, 10),
+        recurrence:   currentBill.recurrence,
+        paid:         false,
+        paidAt:       null,
+        owner:        currentBill.owner,
+        createdAt:    new Date().toISOString(),
+        splitWith:    currentBill.splitWith    || [],
+        splitAmounts: currentBill.splitAmounts || {},
+        reminderDays: currentBill.reminderDays,
+        reminderSent: false,
+      });
+    }
+
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -657,6 +684,54 @@ app.delete('/api/bills/:id', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Bill reminder scheduler ────────────────────────────────
+async function sendBillReminderEmail(bill, daysLeft) {
+  const transporter = getMailTransporter();
+  if (!transporter) return;
+  const targets = bill.splitWith?.length ? bill.splitWith
+    : bill.owner !== 'shared' ? [bill.owner] : [];
+  for (const username of targets) {
+    const user = await db.collection('users').findOne({ username });
+    if (!user?.email) continue;
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to:   user.email,
+      subject: `Reminder: "${bill.name}" due in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
+      html: `<h2>Bill Reminder</h2>
+<p>Hi <strong>${username}</strong>,</p>
+<p>Your <strong>${bill.recurrence}</strong> bill <strong>"${bill.name}"</strong> is due in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>.</p>
+<table style="border-collapse:collapse;margin:12px 0">
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Due date</td><td>${bill.dueDate}</td></tr>
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Amount</td><td><strong>$${Number(bill.amount||0).toFixed(2)}</strong> <em style="color:#888">(update if changed this cycle)</em></td></tr>
+  <tr><td style="padding:4px 16px 4px 0;color:#666">Recurrence</td><td>${bill.recurrence}</td></tr>
+</table>
+<p>Please update the amount on the Bills page if it has changed, then mark it as paid when done.</p>`,
+    }).catch(err => console.error(`[bill-reminder] ${username}:`, err));
+  }
+}
+
+async function checkBillReminders() {
+  try {
+    const today  = new Date();
+    today.setHours(0, 0, 0, 0);
+    const bills  = await db.collection('bills').find({
+      paid:         false,
+      recurrence:   { $ne: 'none' },
+      reminderDays: { $gt: 0 },
+      reminderSent: { $ne: true },
+    }).toArray();
+    for (const bill of bills) {
+      const due      = new Date(bill.dueDate + 'T00:00:00');
+      const daysLeft = Math.ceil((due - today) / 86400000);
+      if (daysLeft >= 0 && daysLeft <= (bill.reminderDays || 3)) {
+        console.log(`[bill-reminder] sending for "${bill.name}", due in ${daysLeft}d`);
+        await sendBillReminderEmail(bill, daysLeft);
+        await db.collection('bills').updateOne({ _id: bill._id }, { $set: { reminderSent: true } });
+      }
+    }
+  } catch (err) { console.error('[bill-reminder] check error:', err.message); }
+}
+
 // ── Catch-all (must be AFTER API routes) ──────────────────
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
@@ -666,6 +741,9 @@ connectDB()
   .then(() => {
     initAlexa();
     app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+    // Run bill reminder check immediately and every 6 hours
+    checkBillReminders();
+    setInterval(checkBillReminders, 6 * 60 * 60 * 1000);
   })
   .catch(err => {
     console.error('Failed to connect to MongoDB:', err.message);

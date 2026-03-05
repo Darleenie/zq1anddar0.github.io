@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping — Home</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#121212" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main class="page-content">
+    <div class="page-header">
+      <h2><i class="fas fa-shopping-cart"></i> Shopping</h2>
+    </div>
+
+    <!-- Cart section -->
+    <section class="shop-section">
+      <div class="shop-section-header">
+        <h3><i class="fas fa-cart-shopping"></i> My Cart</h3>
+        <button class="btn-text-danger" onclick="clearCart()" id="clearCartBtn" style="display:none">
+          <i class="fas fa-trash"></i> Clear cart
+        </button>
+      </div>
+      <div id="cartList">
+        <p class="empty-state"><i class="fas fa-shopping-basket"></i> Your cart is empty.<br>Add items from <a href="/pages/search.html">Find My Stuff</a>.</p>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn-primary" id="generateBtn" onclick="openGenerateModal()" disabled>
+          <i class="fas fa-list-check"></i> Generate Shopping List
+        </button>
+      </div>
+    </section>
+
+    <!-- Generated lists -->
+    <section class="shop-section" style="margin-top:32px">
+      <div class="shop-section-header">
+        <h3><i class="fas fa-clipboard-list"></i> Shopping Lists</h3>
+      </div>
+      <div id="shoppingLists">
+        <p class="empty-state"><i class="fas fa-clipboard"></i> No shopping lists yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Low-stock modal -->
+  <div id="lowStockModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:#ffa726"></i> Low Stock Items</h3>
+        <button class="modal-close" onclick="closeLowStockModal()">&times;</button>
+      </div>
+      <p style="font-size:0.85rem;color:#aaa;margin:12px 0 8px">These items are running low. Add them to the list?</p>
+      <div id="lowStockCheckboxes" style="max-height:220px;overflow-y:auto;margin-bottom:12px"></div>
+      <div style="border-top:1px solid #2a2a2a;padding-top:12px;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#aaa;cursor:pointer">
+          <input type="checkbox" id="dontRemindCheck" />
+          Don't remind me for a month
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="confirmGenerate(false)">Skip</button>
+        <button class="btn-primary" onclick="confirmGenerate(true)">
+          <i class="fas fa-check"></i> Add checked &amp; generate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/auth.js"></script>
+  <script src="../js/shopping.js"></script>
+  <script src="../js/nav.js" defer></script>
+</body>
+</html>

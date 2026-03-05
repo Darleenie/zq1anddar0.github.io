@@ -253,6 +253,7 @@ function renderItems() {
             ${canEdit ? `<button class="btn-icon" onclick="openEditModal('${id}')" title="Edit"><i class="fas fa-edit"></i></button>` : ''}
             ${canEdit ? `<button class="btn-icon btn-flag ${item.missing ? 'active' : ''}" onclick="toggleMissing('${id}')" title="${item.missing ? 'Mark as Found' : 'Report Missing'}"><i class="fas fa-flag"></i></button>` : ''}
             ${canEdit ? `<button class="btn-icon btn-del" onclick="openDeleteModal('${id}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+            ${isLoggedIn() ? `<button class="btn-icon btn-cart" onclick="addToCart('${item.name.replace(/'/g, "\\'")}')" title="Add to cart"><i class="fas fa-cart-plus"></i></button>` : ''}
           </div>
         </div>
       </div>
@@ -651,6 +652,20 @@ async function updateExistingLocation(existingId) {
     showToast(`${existing.name} location updated`);
   } catch (err) {
     alert('Error updating location: ' + err.message);
+  }
+}
+
+async function addToCart(name) {
+  try {
+    const res = await fetch('/api/cart/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ name, qty: 1, note: '' }),
+    });
+    if (!res.ok) throw new Error('Failed');
+    showToast(`Added "${name}" to cart`);
+  } catch {
+    showToast('Could not add to cart');
   }
 }
 

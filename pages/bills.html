@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bills — Home</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#121212" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <main class="page-content">
+    <div class="page-header">
+      <h2><i class="fas fa-file-invoice-dollar"></i> Bills</h2>
+    </div>
+
+    <!-- Add / Edit form -->
+    <section class="shop-section" id="billFormSection">
+      <div class="shop-section-header">
+        <h3 id="billFormTitle"><i class="fas fa-plus"></i> Add Bill</h3>
+        <button class="btn-text-danger" id="cancelEditBtn" onclick="cancelEdit()" style="display:none">
+          <i class="fas fa-times"></i> Cancel edit
+        </button>
+      </div>
+      <form id="billForm" onsubmit="submitBill(event)">
+        <div class="bill-form-grid">
+          <div class="form-group">
+            <label for="billName">Bill name</label>
+            <input type="text" id="billName" placeholder="e.g. Electricity" required />
+          </div>
+          <div class="form-group">
+            <label for="billAmount">Amount ($)</label>
+            <input type="number" id="billAmount" placeholder="0.00" step="0.01" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="billDueDate">Due date</label>
+            <input type="date" id="billDueDate" required />
+          </div>
+          <div class="form-group">
+            <label for="billRecurrence">Recurrence</label>
+            <select id="billRecurrence">
+              <option value="none">None</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="billOwner">Owner</label>
+            <select id="billOwner">
+              <option value="shared">Shared</option>
+              <option value="zq1">zq1</option>
+              <option value="dar0">dar0</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:8px">
+          <button type="submit" class="btn-primary" id="billSubmitBtn">
+            <i class="fas fa-plus"></i> Add Bill
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Bills list -->
+    <section class="shop-section" style="margin-top:32px">
+      <div class="shop-section-header">
+        <h3><i class="fas fa-list"></i> Upcoming Bills</h3>
+      </div>
+      <div id="billsList">
+        <p class="empty-state"><i class="fas fa-file-invoice"></i> No bills yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/auth.js"></script>
+  <script src="../js/bills.js"></script>
+  <script src="../js/nav.js" defer></script>
+</body>
+</html>

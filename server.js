@@ -417,6 +417,132 @@ app.delete('/api/nfc/:tagId', requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================
+// CART  (per-user, requireAuth)
+// ============================================================
+
+app.get('/api/cart', requireAuth, async (req, res) => {
+  try {
+    const cart = await db.collection('carts').findOne({ username: req.user.username });
+    res.json(cart ? cart.items : []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/cart/items', requireAuth, async (req, res) => {
+  try {
+    const { name, qty = 1, note = '' } = req.body;
+    const item = { id: crypto.randomUUID(), name, qty, note };
+    await db.collection('carts').updateOne(
+      { username: req.user.username },
+      { $push: { items: item } },
+      { upsert: true }
+    );
+    res.json(item);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/cart/items/:id', requireAuth, async (req, res) => {
+  try {
+    await db.collection('carts').updateOne(
+      { username: req.user.username },
+      { $pull: { items: { id: req.params.id } } }
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/cart', requireAuth, async (req, res) => {
+  try {
+    await db.collection('carts').updateOne(
+      { username: req.user.username },
+      { $set: { items: [] } }
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ============================================================
+// SHOPPING LISTS  (requireAuth)
+// ============================================================
+
+app.get('/api/shopping-lists', requireAuth, async (_req, res) => {
+  try {
+    const lists = await db.collection('shopping_lists').find().sort({ createdAt: -1 }).toArray();
+    res.json(lists);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/shopping-lists', requireAuth, async (req, res) => {
+  try {
+    const list = {
+      items:       req.body.items || [],
+      createdBy:   req.user.username,
+      createdAt:   new Date().toISOString(),
+      completed:   false,
+      completedAt: null,
+    };
+    const result = await db.collection('shopping_lists').insertOne(list);
+    res.json({ ...list, _id: result.insertedId });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/shopping-lists/:id', requireAuth, async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    if (updates.completed && !updates.completedAt) updates.completedAt = new Date().toISOString();
+    if (!updates.completed) updates.completedAt = null;
+    await db.collection('shopping_lists').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updates }
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/shopping-lists/:id', requireAuth, async (req, res) => {
+  try {
+    await db.collection('shopping_lists').deleteOne({ _id: new ObjectId(req.params.id) });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ============================================================
+// BILLS  (requireAuth)
+// ============================================================
+
+app.get('/api/bills', requireAuth, async (_req, res) => {
+  try {
+    const bills = await db.collection('bills').find().sort({ dueDate: 1 }).toArray();
+    res.json(bills);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/bills', requireAuth, async (req, res) => {
+  try {
+    const bill = { ...req.body, createdAt: new Date().toISOString() };
+    const result = await db.collection('bills').insertOne(bill);
+    res.json({ ...bill, _id: result.insertedId });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/bills/:id', requireAuth, async (req, res) => {
+  try {
+    const { _id, ...updates } = req.body;
+    await db.collection('bills').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updates }
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/bills/:id', requireAuth, async (req, res) => {
+  try {
+    await db.collection('bills').deleteOne({ _id: new ObjectId(req.params.id) });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Catch-all (must be AFTER API routes) ──────────────────
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 

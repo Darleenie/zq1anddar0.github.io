@@ -19,6 +19,10 @@ function updateNavAuth() {
   const area = document.getElementById('navAuth');
   if (!area) return;
   const user = getUser(); // from auth.js
+  ['nav-shopping', 'nav-bills'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = user ? '' : 'none';
+  });
   if (user) {
     area.innerHTML = `
       <span class="nav-user-badge">

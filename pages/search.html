@@ -18,8 +18,6 @@
     <div id="nav-placeholder"></div>
   </section>
 
-  <!-- Notification Banner -->
-  <div id="notification-banner" class="notification-banner" style="display:none"></div>
 
   <main class="inventory-main">
 
@@ -68,6 +66,7 @@
       </div>
       <div class="filter-buttons">
         <button class="filter-btn active" data-filter="all"        onclick="setFilter(this)">All</button>
+        <button class="filter-btn"        data-filter="low-stock"  onclick="setFilter(this)"><i class="fas fa-exclamation-triangle"></i> Low Stock</button>
         <button class="filter-btn"        data-filter="food"       onclick="setFilter(this)"><i class="fas fa-utensils"></i> Food</button>
         <button class="filter-btn"        data-filter="medicine"   onclick="setFilter(this)"><i class="fas fa-pills"></i> Medicine</button>
         <button class="filter-btn"        data-filter="cleaning"   onclick="setFilter(this)"><i class="fas fa-spray-can"></i> Cleaning</button>

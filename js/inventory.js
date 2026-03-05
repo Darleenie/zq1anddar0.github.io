@@ -178,10 +178,16 @@ function renderItems() {
   const grid = document.getElementById('itemGrid');
   let items = [...allItems];
 
-  // Filter by current room (items without a room field default to 'living')
-  items = items.filter(i => (i.room || 'living') === currentRoom);
-
-  if (currentFilter !== 'all') items = items.filter(i => i.classification === currentFilter);
+  // Low-stock filter spans all rooms; all other filters respect the room tab
+  if (currentFilter === 'low-stock') {
+    items = items.filter(i => {
+      const qty = Number(i.qty);
+      return qty === 0 || (qty <= LOW_STOCK_THRESHOLD && CONSUMABLE_CLASSES.includes(i.classification));
+    });
+  } else {
+    items = items.filter(i => (i.room || 'living') === currentRoom);
+    if (currentFilter !== 'all') items = items.filter(i => i.classification === currentFilter);
+  }
   if (query) {
     items = items.filter(i =>
       i.name.toLowerCase().includes(query) ||

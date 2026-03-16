@@ -75,6 +75,15 @@ function setRoom(btn) {
   renderItems();
 }
 
+function updateLocSuggestions() {
+  const dl = document.getElementById('loc-suggestions');
+  if (!dl) return;
+  const locs = [...new Set(
+    allItems.filter(i => i.room === selectedFormRoom).map(i => i.location).filter(Boolean)
+  )].sort();
+  dl.innerHTML = locs.map(l => `<option value="${l}"></option>`).join('');
+}
+
 function selectFormRoom(btn) {
   document.querySelectorAll('.room-sel-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -87,6 +96,7 @@ function selectFormRoom(btn) {
       b.classList.toggle('active', b.dataset.vis === selectedVisibility);
     });
   }
+  updateLocSuggestions();
 }
 
 // ============================================================
@@ -306,6 +316,7 @@ function openAddModal() {
     selectedVisibility = 'public';
   }
 
+  updateLocSuggestions();
   document.getElementById('itemModal').classList.remove('hidden');
 }
 
@@ -350,6 +361,7 @@ function openEditModal(id) {
     ? `<img src="${item.image}" alt="preview" />`
     : '';
 
+  updateLocSuggestions();
   document.getElementById('itemModal').classList.remove('hidden');
 }
 

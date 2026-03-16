@@ -107,6 +107,16 @@
           <label for="s-exp">Expiry Date</label>
           <input type="date" id="s-exp" />
         </div>
+        <div class="form-group">
+          <label>Photo</label>
+          <div class="img-upload-area">
+            <label class="file-upload-btn" for="s-img">
+              <i class="fas fa-camera"></i> Choose Photo
+              <input type="file" id="s-img" accept="image/*" onchange="previewStoreImage(event)" />
+            </label>
+          </div>
+          <div id="s-img-preview" class="img-preview"></div>
+        </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary" onclick="showScreen('actions')">Cancel</button>
           <button type="submit" class="btn-primary" id="storeSaveBtn">

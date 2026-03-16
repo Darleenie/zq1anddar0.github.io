@@ -136,7 +136,8 @@
 
         <div class="form-group">
           <label for="f-loc">Spot / Location <span class="required">*</span></label>
-          <input type="text" id="f-loc" required placeholder="e.g. Kitchen Cabinet, Top Shelf" />
+          <input type="text" id="f-loc" required placeholder="e.g. Kitchen Cabinet, Top Shelf" list="loc-suggestions" autocomplete="off" />
+          <datalist id="loc-suggestions"></datalist>
         </div>
 
         <div class="form-group">

@@ -11,6 +11,7 @@ let currentTag  = null;   // registered NFC tag object
 let currentTagId = null;  // raw tagId from URL param
 let itemAction  = null;   // 'use' | 'remove'
 let editTagRoom = 'living';
+let pendingStoreImage = null;
 
 // ============================================================
 // SCREEN MANAGEMENT
@@ -75,6 +76,61 @@ function populateActionsScreen() {
 }
 
 // ============================================================
+// IMAGE HELPERS
+// ============================================================
+function compressImage(file, maxDim = 800, quality = 0.72) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width  = Math.round(width  * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function fmtBytes(n) {
+  return n < 1024 * 1024
+    ? (n / 1024).toFixed(1) + ' KB'
+    : (n / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+async function previewStoreImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const preview = document.getElementById('s-img-preview');
+  preview.innerHTML = '<span class="compress-status"><i class="fas fa-spinner fa-spin"></i> Compressing…</span>';
+
+  const compressed = await compressImage(file);
+  const b64data    = compressed.split(',')[1] || compressed;
+  const compressedSize = Math.round(b64data.length * 0.75);
+
+  pendingStoreImage = compressed;
+
+  preview.innerHTML = `
+    <img src="${compressed}" alt="preview" style="max-height:180px;max-width:100%;border-radius:8px;border:1px solid #ddd;display:block;margin-top:6px" />
+    <span class="compress-info">
+      <i class="fas fa-compress-arrows-alt"></i>
+      ${fmtBytes(file.size)} → <strong>${fmtBytes(compressedSize)}</strong>
+    </span>
+  `;
+}
+
+// ============================================================
 // STORE ACTION
 // ============================================================
 function toggleStoreExpiry() {
@@ -96,7 +152,7 @@ async function submitStore(e) {
     locationDetail: currentTag.locationDetail || null,
     qty:            parseInt(document.getElementById('s-qty').value),
     expirationDate: document.getElementById('s-exp').value || null,
-    image:          null,
+    image:          pendingStoreImage || null,
   };
 
   try {
@@ -108,6 +164,8 @@ async function submitStore(e) {
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     e.target.reset();
     document.getElementById('s-exp-group').style.display = 'none';
+    document.getElementById('s-img-preview').innerHTML = '';
+    pendingStoreImage = null;
     showScreen('actions');
     showToast(`${item.name} stored at ${item.location}`);
   } catch (err) {

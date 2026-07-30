@@ -105,19 +105,62 @@
 
       <div class="sh-settings-section">
         <h3><i class="fab fa-amazon" style="color:#f90"></i> Amazon Alexa</h3>
-        <p class="sh-settings-desc">
-          Alexa credentials are set on the <strong>server</strong> as environment variables — they never touch the browser.
-          Add these two config vars on Heroku (or your <code>.env</code> file locally) then redeploy:
-        </p>
-        <div class="sh-env-block">
-          <code>AMAZON_EMAIL=your@email.com</code>
-          <code>AMAZON_PASSWORD=yourpassword</code>
+
+        <!-- Live connection state -->
+        <div class="sh-alexa-status is-idle" id="alexaStatusPill">
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <span class="sh-alexa-status-text">Checking Alexa connection…</span>
         </div>
-        <p class="sh-settings-desc" style="margin-top:8px">
-          <i class="fas fa-exclamation-triangle" style="color:#e67e22"></i>
-          <strong>2FA / OTP:</strong> If your Amazon account has two-factor authentication enabled,
-          disable it or create a separate Amazon account for this integration.
-          <code>alexa-remote2</code> doesn't support interactive 2FA prompts.
+
+        <p class="sh-settings-desc">
+          Amazon no longer allows a server to sign in with just an email and password —
+          the login demands a one-time code and blocks cloud IPs, which is why
+          <strong>AMAZON_EMAIL / AMAZON_PASSWORD never connects on Heroku</strong>.
+          Instead, log in <em>once from your own computer</em> and paste the resulting token here.
+          It is stored on the server and refreshes itself automatically.
+        </p>
+
+        <ol class="sh-alexa-steps">
+          <li>
+            On your home computer (same network as your Echo), run:
+            <code>npx alexa-cookie-cli</code>
+          </li>
+          <li>
+            Open <strong>http://localhost:8080</strong> in your browser and sign in to Amazon
+            normally — including the OTP code. This part works because it's your own machine.
+          </li>
+          <li>
+            The tool prints a JSON blob containing <code>refreshToken</code> and <code>macDms</code>.
+            Copy the whole thing, braces included.
+          </li>
+          <li>Paste it below and press <strong>Connect Alexa</strong>.</li>
+        </ol>
+
+        <div class="form-group">
+          <label for="alexaBlobInput">Registration JSON (or raw cookie string)</label>
+          <textarea id="alexaBlobInput" class="sh-alexa-blob"
+                    placeholder='{"loginCookie":"…","refreshToken":"Atnr|…","macDms":{…}}'
+                    autocomplete="off" spellcheck="false"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="disconnectAlexa()">
+            <i class="fas fa-link-slash"></i> Disconnect
+          </button>
+          <button class="btn-secondary" onclick="reconnectAlexa()">
+            <i class="fas fa-rotate-right"></i> Retry
+          </button>
+          <button class="btn-primary" onclick="connectAlexa()">
+            <i class="fab fa-amazon"></i> Connect Alexa
+          </button>
+        </div>
+
+        <p class="sh-alexa-note">
+          <strong>Don't want to bother with tokens?</strong> There's a simpler route that never breaks:
+          keep controlling devices through <strong>SmartThings</strong> (already connected above), and
+          create a <strong>Virtual Switch</strong> in SmartThings for each Alexa Routine you want to fire.
+          In the Alexa app, set the Routine's trigger to that virtual switch. Flipping it from this page
+          then runs the Alexa scene — no Amazon login required anywhere.
         </p>
       </div>
 

@@ -5,49 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>dar0's Room</title>
   <link rel="manifest" href="../manifest.json" />
-  <meta name="theme-color" content="#121212" />
+  <meta name="theme-color" content="#1c130c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Home" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="../css/style.css" />
-  <!-- AOS Animation Library -->
-   
-  <!-- <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-  <script>
-    AOS.init();
-  </script>
-  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet"> -->
 </head>
-<body>
-  <!-- In your HTML page -->
+<body class="room-page">
   <section>
     <div id="nav-placeholder"></div>
   </section>
 
-  <!-- Welcome Image -->
-  <header>
-    <section class="section room dar0-room">
-      <h2>Welcome to dar0's Room</h2>
+  <main class="room-main" data-room="dar0">
+
+    <!-- Hero -->
+    <header class="room-hero dar0-room">
+      <div class="room-hero-scrim"></div>
+      <div class="room-hero-content">
+        <span class="room-hero-eyebrow">Private Suite</span>
+        <h1 class="room-hero-title">dar0's Room</h1>
+        <div class="room-hero-rule"></div>
+      </div>
+    </header>
+
+    <!-- At a glance -->
+    <section class="room-stats" data-room-stats="dar0"></section>
+
+    <!-- Calendar -->
+    <section class="room-block">
+      <div data-room-calendar="dar0" data-title="My Schedule"></div>
     </section>
-  </header>
 
-  <!-- Google Calendar Embed -->
-  <section class="section iframe">
-    <h2>My Schedule</h2>
-    <!-- Replace the src URL with your Google Calendar embed link -->
-    <iframe src="https://calendar.google.com/calendar/embed?src=jiangdl0129%40gmail.com&ctz=America%2FNew_York" style="border: 0; width: 100%; min-height: 500px;" width="100%" height="600" frameborder="0" scrolling="no"></iframe>
-  </section>
+    <!-- Alexa commands -->
+    <section class="room-block">
+      <div class="lux-card">
+        <div class="lux-card-head">
+          <span class="lux-eyebrow">Voice</span>
+          <h3 class="lux-card-title"><i class="fas fa-microphone-lines"></i> Alexa Commands</h3>
+        </div>
+        <ul class="lux-command-list">
+          <li><span class="cmd-quote">"Echo, I'm back"</span></li>
+          <li><span class="cmd-quote">"Echo, turn off bathroom"</span></li>
+          <li><span class="cmd-quote">"Echo, good night"</span></li>
+        </ul>
+      </div>
+    </section>
 
-  <!-- Alexa Commands -->
-  <section class="section">
-    <h2 class="h2">Alexa Command List</h2>
-    <ul class="ul">
-    <li>"Echo, I'm back"</li>
-    <li>"Echo, turn off bathroom"</li>
-    <li>"Echo, good night"</li>
-  </ul>
-</section>
+    <!-- Quick links -->
+    <section class="room-block">
+      <div class="room-quick-grid">
+        <a class="room-quick-tile" href="/pages/search.html?room=dar0">
+          <i class="fas fa-box-open"></i><span>Room Inventory</span>
+        </a>
+        <a class="room-quick-tile" href="/pages/smart-home.html">
+          <i class="fas fa-lightbulb"></i><span>Devices</span>
+        </a>
+        <a class="room-quick-tile" href="/pages/nfc-manage.html">
+          <i class="fas fa-tag"></i><span>NFC Tags</span>
+        </a>
+        <a class="room-quick-tile" href="/pages/shopping.html">
+          <i class="fas fa-basket-shopping"></i><span>Shopping</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
   <script src="../js/auth.js"></script>
+  <script src="../js/room-calendar.js"></script>
+  <script src="../js/room-page.js"></script>
   <script src="../js/nav.js" defer></script>
 </body>
 </html>

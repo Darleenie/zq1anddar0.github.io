@@ -285,53 +285,206 @@ app.post('/api/items/bulk', optionalAuth, async (req, res) => {
 // ============================================================
 // ALEXA (alexa-remote2 proxy — credentials stay server-side)
 // ============================================================
-let alexa = null;
-let alexaReady = false;
-let alexaError = null;
+// Amazon has effectively killed headless email+password login: the sign-in
+// flow now demands OTP / captcha and hard-blocks datacenter IPs (Heroku).
+// The path that actually works is cookie auth — the user runs the
+// alexa-cookie proxy once from their home network, pastes the resulting
+// registration JSON in here, and we persist + auto-refresh it forever.
+let alexa           = null;
+let alexaReady      = false;
+let alexaError      = null;
+let alexaMode       = 'none';   // 'cookie' | 'password' | 'none'
+let alexaConnectedAt = null;
 
-function initAlexa() {
-  const email    = process.env.AMAZON_EMAIL;
-  const password = process.env.AMAZON_PASSWORD;
-  if (!email || !password) {
-    console.log('Alexa: AMAZON_EMAIL / AMAZON_PASSWORD not set — skipping');
-    return;
-  }
+const ALEXA_CRED_ID = 'alexa_credentials';
 
-  alexa = new AlexaRemote();
-  alexa.init({
-    email,
-    password,
-    cookieRefreshInterval: 7 * 24 * 60 * 60 * 1000,
-    alexaServiceHost: 'alexa.amazon.com',
-    amazonPage:       'amazon.com',
-    acceptLanguage:   'en-US',
-    useWsMqtt:        false,
-  }, (err) => {
-    if (err) {
-      console.error('Alexa init error:', err.message || err);
-      alexaError = err.message || String(err);
-      alexaReady = false;
-    } else {
-      console.log('Alexa connected');
-      alexaReady = true;
-      alexaError = null;
+// Registration blob straight from the alexa-cookie proxy, or a raw cookie
+// string. Accepts either shape; JSON wins when it parses.
+function parseAlexaBlob(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'object') return raw;
+  const text = String(raw).trim();
+  if (!text) return null;
+  if (text.startsWith('{')) {
+    try {
+      const obj = JSON.parse(text);
+      // The proxy sometimes wraps it as { cookieData: {...} }
+      return obj.cookieData || obj;
+    } catch {
+      throw new Error('That looks like JSON but it did not parse. Copy the whole blob, including the outer { }.');
     }
+  }
+  return text; // raw cookie string
+}
+
+function describeAlexaBlob(blob) {
+  if (!blob) return null;
+  if (typeof blob === 'string') return { kind: 'cookie-string' };
+  return {
+    kind:          'registration',
+    hasRefresh:    !!blob.refreshToken,
+    hasMacDms:     !!blob.macDms,
+    amazonPage:    blob.amazonPage || null,
+    tokenDate:     blob.tokenDate || null,
+  };
+}
+
+async function loadStoredAlexaBlob() {
+  if (!db) return null;
+  const doc = await db.collection('settings').findOne({ _id: ALEXA_CRED_ID });
+  return doc?.blob || null;
+}
+
+async function saveAlexaBlob(blob) {
+  await db.collection('settings').updateOne(
+    { _id: ALEXA_CRED_ID },
+    { $set: { blob, updatedAt: new Date() } },
+    { upsert: true },
+  );
+}
+
+// Env fallback so the connection can also be set without touching the UI
+function envAlexaBlob() {
+  const raw = process.env.ALEXA_COOKIE || process.env.ALEXA_REFRESH_TOKEN;
+  if (!raw) return null;
+  try { return parseAlexaBlob(raw); } catch { return raw; }
+}
+
+function initAlexa(overrideBlob = null) {
+  return new Promise(async (resolve) => {
+    let blob = overrideBlob;
+    if (!blob) {
+      try { blob = await loadStoredAlexaBlob(); } catch (err) {
+        console.error('Alexa: could not read stored credentials:', err.message);
+      }
+    }
+    if (!blob) blob = envAlexaBlob();
+
+    const email    = process.env.AMAZON_EMAIL;
+    const password = process.env.AMAZON_PASSWORD;
+
+    const opts = {
+      cookieRefreshInterval: 4 * 24 * 60 * 60 * 1000,
+      alexaServiceHost: 'alexa.amazon.com',
+      amazonPage:       'amazon.com',
+      acceptLanguage:   'en-US',
+      useWsMqtt:        false,
+    };
+
+    if (blob) {
+      opts.cookie = blob;
+      alexaMode   = 'cookie';
+    } else if (email && password) {
+      opts.email    = email;
+      opts.password = password;
+      alexaMode     = 'password';
+      console.log('Alexa: falling back to email/password — this usually fails on Amazon accounts with 2FA.');
+    } else {
+      alexaMode  = 'none';
+      alexaReady = false;
+      alexaError = null;
+      console.log('Alexa: no credentials configured — skipping');
+      return resolve({ ready: false, mode: 'none' });
+    }
+
+    alexa = new AlexaRemote();
+
+    // Persist refreshed credentials so a dyno restart stays signed in
+    alexa.on('cookie', () => {
+      const fresh = alexa?.cookieData;
+      if (!fresh) return;
+      saveAlexaBlob(fresh)
+        .then(() => console.log('Alexa: refreshed credentials saved'))
+        .catch(err => console.error('Alexa: failed to save refreshed credentials:', err.message));
+    });
+
+    alexa.init(opts, (err) => {
+      if (err) {
+        const msg = err.message || String(err);
+        console.error('Alexa init error:', msg);
+        alexaError       = msg;
+        alexaReady       = false;
+        alexaConnectedAt = null;
+      } else {
+        console.log(`Alexa connected (${alexaMode})`);
+        alexaReady       = true;
+        alexaError       = null;
+        alexaConnectedAt = new Date();
+        if (alexaMode === 'cookie' && alexa.cookieData) {
+          saveAlexaBlob(alexa.cookieData).catch(() => {});
+        }
+      }
+      resolve({ ready: alexaReady, mode: alexaMode, error: alexaError });
+    });
   });
 }
 
 // ── GET status ─────────────────────────────────────────────
-app.get('/api/alexa/status', requireAuth, (_req, res) => {
+app.get('/api/alexa/status', requireAuth, async (_req, res) => {
+  let stored = null;
+  try { stored = await loadStoredAlexaBlob(); } catch {}
   res.json({
-    ready:      alexaReady,
-    error:      alexaError,
-    configured: !!(process.env.AMAZON_EMAIL && process.env.AMAZON_PASSWORD),
+    ready:       alexaReady,
+    error:       alexaError,
+    mode:        alexaMode,
+    configured:  alexaMode !== 'none',
+    connectedAt: alexaConnectedAt,
+    stored:      describeAlexaBlob(stored),
+    envPassword: !!(process.env.AMAZON_EMAIL && process.env.AMAZON_PASSWORD),
   });
+});
+
+// ── POST connect — paste registration blob / cookie ────────
+app.post('/api/alexa/connect', requireAuth, async (req, res) => {
+  try {
+    const blob = parseAlexaBlob(req.body?.cookie);
+    if (!blob) return res.status(400).json({ error: 'Paste the cookie or registration JSON first.' });
+
+    if (typeof blob === 'object' && !blob.localCookie && !blob.refreshToken) {
+      return res.status(400).json({
+        error: 'That JSON has no localCookie or refreshToken — it is not an alexa-cookie registration blob.',
+      });
+    }
+
+    await saveAlexaBlob(blob);
+    const result = await initAlexa(blob);
+    if (!result.ready) {
+      return res.status(502).json({ error: result.error || 'Amazon rejected those credentials.' });
+    }
+    res.json({ success: true, mode: result.mode });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST reconnect — retry with whatever is stored ─────────
+app.post('/api/alexa/reconnect', requireAuth, async (_req, res) => {
+  const result = await initAlexa();
+  if (!result.ready) {
+    return res.status(502).json({ error: result.error || 'Could not connect to Alexa.' });
+  }
+  res.json({ success: true, mode: result.mode });
+});
+
+// ── DELETE disconnect — forget stored credentials ──────────
+app.delete('/api/alexa/connect', requireAuth, async (_req, res) => {
+  try {
+    await db.collection('settings').deleteOne({ _id: ALEXA_CRED_ID });
+    alexa = null;
+    alexaReady = false;
+    alexaError = null;
+    alexaMode  = 'none';
+    alexaConnectedAt = null;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── GET devices ────────────────────────────────────────────
 app.get('/api/alexa/devices', requireAuth, (_req, res) => {
   if (!alexaReady || !alexa) {
-    return res.status(503).json({ error: alexaError || 'Alexa not initialised.' });
+    return res.status(503).json({ error: alexaError || 'Alexa not connected.' });
   }
   alexa.getSmarthomeDevices((err, result) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -342,7 +495,7 @@ app.get('/api/alexa/devices', requireAuth, (_req, res) => {
 // ── POST command (on / off) ────────────────────────────────
 app.post('/api/alexa/devices/:entityId/command', requireAuth, (req, res) => {
   if (!alexaReady || !alexa) {
-    return res.status(503).json({ error: 'Alexa not initialised' });
+    return res.status(503).json({ error: 'Alexa not connected' });
   }
   const { command } = req.body;
   const { entityId } = req.params;
@@ -360,6 +513,30 @@ app.post('/api/alexa/devices/:entityId/command', requireAuth, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
   });
+});
+
+// ── POST speak — make an Echo say something ────────────────
+app.post('/api/alexa/speak', requireAuth, (req, res) => {
+  if (!alexaReady || !alexa) {
+    return res.status(503).json({ error: 'Alexa not connected' });
+  }
+  const { device, message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'message is required' });
+  alexa.sendSequenceCommand(device || alexa.serialNumbers && Object.keys(alexa.serialNumbers)[0], 'speak', message, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+// ── GET echo devices (for the speak dropdown) ──────────────
+app.get('/api/alexa/echoes', requireAuth, (_req, res) => {
+  if (!alexaReady || !alexa) {
+    return res.status(503).json({ error: 'Alexa not connected' });
+  }
+  const list = Object.values(alexa.serialNumbers || {})
+    .filter(d => d.capabilities?.includes('TEXT_TO_SPEECH'))
+    .map(d => ({ serialNumber: d.serialNumber, name: d.accountName, online: d.online }));
+  res.json({ devices: list });
 });
 
 // ============================================================
@@ -732,6 +909,357 @@ async function checkBillReminders() {
   } catch (err) { console.error('[bill-reminder] check error:', err.message); }
 }
 
+// ============================================================
+// CALENDAR — Google Calendar ICS proxy
+// ============================================================
+// The browser can't fetch an .ics feed directly (Google sends no CORS
+// headers), so we fetch + parse server-side and hand back plain JSON.
+// That's what lets the room pages render a native calendar instead of a
+// fixed-width Google iframe that blows past the page boundary on a phone.
+
+function icsUrlFor(src) {
+  const value = String(src || '').trim();
+  if (!value) throw new Error('No calendar source given.');
+
+  if (/^https?:\/\//i.test(value)) {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') throw new Error('Calendar URL must be https.');
+    const host = url.hostname.toLowerCase();
+    // Block anything that could point back at our own network
+    if (/^(localhost|\[?::1\]?|0\.0\.0\.0)$/.test(host) ||
+        /^(10|127|169\.254)\./.test(host) ||
+        /^192\.168\./.test(host) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(host)) {
+      throw new Error('That host is not allowed.');
+    }
+    // Google hands out webcal/basic.ics links — normalise the embed form too
+    if (host.endsWith('google.com') && url.pathname.includes('/calendar/embed')) {
+      const cid = url.searchParams.get('src');
+      if (cid) return `https://calendar.google.com/calendar/ical/${encodeURIComponent(cid)}/public/basic.ics`;
+    }
+    return url.toString();
+  }
+
+  // Bare calendar id / gmail address → public ICS feed
+  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(value)}/public/basic.ics`;
+}
+
+// ── ICS parsing ────────────────────────────────────────────
+function unfoldICS(text) {
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n[ \t]/g, '');
+}
+
+function unescapeICS(v) {
+  return String(v || '')
+    .replace(/\\n/gi, '\n')
+    .replace(/\\,/g, ',')
+    .replace(/\\;/g, ';')
+    .replace(/\\\\/g, '\\');
+}
+
+// Offset (ms) of a named timezone at a given instant
+function tzOffsetMs(utcMs, tz) {
+  try {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    const p = Object.fromEntries(dtf.formatToParts(new Date(utcMs)).map(x => [x.type, x.value]));
+    const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, (+p.hour) % 24, +p.minute, +p.second);
+    return asUTC - utcMs;
+  } catch { return 0; }
+}
+
+// Wall-clock time in `tz` → real UTC instant
+function zonedToUTC(y, mo, d, h, mi, s, tz) {
+  const guess = Date.UTC(y, mo - 1, d, h, mi, s);
+  const off   = tzOffsetMs(guess, tz);
+  // One correction pass handles everything but the ambiguous DST hour
+  return new Date(guess - off + (tzOffsetMs(guess - off, tz) - off));
+}
+
+// Returns the *naive* wall-clock time (encoded into a UTC Date) plus the zone
+// it belongs to. Recurrences must be expanded on wall-clock, not on instants —
+// otherwise a 9am weekly event silently becomes 8am when DST ends.
+function parseICSDate(value, params, fallbackTz) {
+  const v = String(value || '').trim();
+  if (/^\d{8}$/.test(v)) {
+    const y = +v.slice(0, 4), mo = +v.slice(4, 6), d = +v.slice(6, 8);
+    return { naive: new Date(Date.UTC(y, mo - 1, d)), tz: 'UTC', allDay: true };
+  }
+  const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/.exec(v);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s, z] = m;
+  return {
+    naive:  new Date(Date.UTC(+y, +mo - 1, +d, +h, +mi, +s)),
+    tz:     z ? 'UTC' : (params.TZID || fallbackTz || 'UTC'),
+    allDay: false,
+  };
+}
+
+// naive wall-clock → real instant, and back
+function naiveToReal(naive, tz) {
+  if (tz === 'UTC') return new Date(naive.getTime());
+  return zonedToUTC(
+    naive.getUTCFullYear(), naive.getUTCMonth() + 1, naive.getUTCDate(),
+    naive.getUTCHours(), naive.getUTCMinutes(), naive.getUTCSeconds(), tz,
+  );
+}
+
+function realToNaive(real, tz) {
+  if (tz === 'UTC') return new Date(real.getTime());
+  return new Date(real.getTime() + tzOffsetMs(real.getTime(), tz));
+}
+
+function parseParams(rawKey) {
+  const [name, ...rest] = rawKey.split(';');
+  const params = {};
+  for (const chunk of rest) {
+    const eq = chunk.indexOf('=');
+    if (eq > 0) params[chunk.slice(0, eq).toUpperCase()] = chunk.slice(eq + 1).replace(/^"|"$/g, '');
+  }
+  return { name: name.toUpperCase(), params };
+}
+
+const WEEKDAY_INDEX = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+
+function parseRRule(raw) {
+  const rule = {};
+  for (const part of String(raw).split(';')) {
+    const eq = part.indexOf('=');
+    if (eq < 0) continue;
+    rule[part.slice(0, eq).toUpperCase()] = part.slice(eq + 1);
+  }
+  return rule;
+}
+
+// Expand a recurring event into concrete wall-clock starts inside [from, to].
+// Everything here is naive wall-clock in the event's own zone; the caller
+// converts back to real instants afterwards.
+function expandRecurrence(start, rule, from, to, exdates, tz = 'UTC') {
+  const out  = [];
+  const freq = (rule.FREQ || '').toUpperCase();
+  if (!freq) return [start];
+
+  const interval = Math.max(1, parseInt(rule.INTERVAL, 10) || 1);
+  const count    = rule.COUNT ? parseInt(rule.COUNT, 10) : null;
+
+  // UNTIL is usually stamped in UTC — bring it into the event's wall clock
+  let until = null;
+  if (rule.UNTIL) {
+    const parsed = parseICSDate(rule.UNTIL, {}, 'UTC');
+    if (parsed) until = realToNaive(naiveToReal(parsed.naive, parsed.tz), tz);
+  }
+  const byDay    = rule.BYDAY
+    ? rule.BYDAY.split(',').map(t => {
+        const m = /^([+-]?\d)?([A-Z]{2})$/.exec(t.trim().toUpperCase());
+        return m ? { nth: m[1] ? +m[1] : null, day: WEEKDAY_INDEX[m[2]] } : null;
+      }).filter(x => x && x.day !== undefined)
+    : null;
+  const byMonthDay = rule.BYMONTHDAY ? rule.BYMONTHDAY.split(',').map(Number) : null;
+
+  const skip = new Set((exdates || []).map(d => d.getTime()));
+  const hardCap = 800;
+
+  const push = (d) => {
+    if (skip.has(d.getTime())) return true;
+    if (until && d > until) return false;
+    if (d >= from && d <= to) out.push(new Date(d));
+    return true;
+  };
+
+  let emitted = 0;
+  let cursor  = new Date(start);
+
+  const stepCursor = () => {
+    if (freq === 'DAILY')   cursor.setUTCDate(cursor.getUTCDate() + interval);
+    if (freq === 'WEEKLY')  cursor.setUTCDate(cursor.getUTCDate() + 7 * interval);
+    if (freq === 'MONTHLY') cursor.setUTCMonth(cursor.getUTCMonth() + interval);
+    if (freq === 'YEARLY')  cursor.setUTCFullYear(cursor.getUTCFullYear() + interval);
+  };
+
+  for (let guard = 0; guard < hardCap; guard++) {
+    if (cursor > to) break;
+    if (count && emitted >= count) break;
+    if (until && cursor > until) break;
+
+    let instants = [];
+
+    if (freq === 'WEEKLY' && byDay) {
+      // Start of this ISO-ish week (Sunday), then pick the requested days
+      const weekStart = new Date(cursor);
+      weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay());
+      for (const { day } of byDay) {
+        const d = new Date(weekStart);
+        d.setUTCDate(weekStart.getUTCDate() + day);
+        d.setUTCHours(start.getUTCHours(), start.getUTCMinutes(), start.getUTCSeconds(), 0);
+        if (d >= start) instants.push(d);
+      }
+    } else if (freq === 'MONTHLY' && byDay) {
+      for (const { nth, day } of byDay) {
+        const first = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), 1,
+          start.getUTCHours(), start.getUTCMinutes(), start.getUTCSeconds()));
+        const daysInMonth = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0)).getUTCDate();
+        const matches = [];
+        for (let dd = 1; dd <= daysInMonth; dd++) {
+          const d = new Date(first);
+          d.setUTCDate(dd);
+          if (d.getUTCDay() === day) matches.push(d);
+        }
+        if (!matches.length) continue;
+        if (nth === null)     instants.push(...matches);
+        else if (nth > 0)     matches[nth - 1] && instants.push(matches[nth - 1]);
+        else                  matches[matches.length + nth] && instants.push(matches[matches.length + nth]);
+      }
+    } else if (freq === 'MONTHLY' && byMonthDay) {
+      for (const dd of byMonthDay) {
+        const d = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), dd,
+          start.getUTCHours(), start.getUTCMinutes(), start.getUTCSeconds()));
+        if (d.getUTCMonth() === cursor.getUTCMonth()) instants.push(d);
+      }
+    } else {
+      instants = [new Date(cursor)];
+    }
+
+    instants.sort((a, b) => a - b);
+    for (const d of instants) {
+      if (d < start) continue;
+      if (count && emitted >= count) break;
+      if (!push(d)) return out;
+      emitted++;
+    }
+
+    stepCursor();
+  }
+
+  return out;
+}
+
+function parseICS(text, from, to) {
+  const lines  = unfoldICS(text).split('\n');
+  const events = [];
+  let calTz = 'UTC';
+  let cur   = null;
+
+  for (const line of lines) {
+    if (line.startsWith('X-WR-TIMEZONE:')) { calTz = line.slice(14).trim() || 'UTC'; continue; }
+    if (line === 'BEGIN:VEVENT') { cur = { exdates: [] }; continue; }
+    if (line === 'END:VEVENT')   { if (cur) events.push(cur); cur = null; continue; }
+    if (!cur) continue;
+
+    const colon = line.indexOf(':');
+    if (colon < 0) continue;
+    const { name, params } = parseParams(line.slice(0, colon));
+    const value = line.slice(colon + 1);
+
+    switch (name) {
+      case 'SUMMARY':     cur.title = unescapeICS(value); break;
+      case 'DESCRIPTION': cur.description = unescapeICS(value); break;
+      case 'LOCATION':    cur.location = unescapeICS(value); break;
+      case 'UID':         cur.uid = value; break;
+      case 'STATUS':      cur.status = value; break;
+      case 'RRULE':       cur.rrule = parseRRule(value); break;
+      case 'DTSTART': {
+        const p = parseICSDate(value, params, calTz);
+        if (p) { cur.start = p.naive; cur.tz = p.tz; cur.allDay = p.allDay; }
+        break;
+      }
+      case 'DTEND': {
+        const p = parseICSDate(value, params, calTz);
+        if (p) cur.end = p.naive;
+        break;
+      }
+      case 'EXDATE': {
+        for (const chunk of value.split(',')) {
+          const p = parseICSDate(chunk, params, calTz);
+          if (p) cur.exdates.push(p.naive);
+        }
+        break;
+      }
+    }
+  }
+
+  const out = [];
+  for (const ev of events) {
+    if (!ev.start || ev.status === 'CANCELLED') continue;
+    const tz = ev.tz || 'UTC';
+    const durationMs = ev.end ? (ev.end - ev.start) : (ev.allDay ? 86400000 : 3600000);
+
+    // Expand in wall-clock space over a padded window, then convert to real
+    // instants and clip precisely — the padding covers the UTC offset.
+    const pad       = 2 * 86400000;
+    const fromNaive = realToNaive(new Date(from.getTime() - pad), tz);
+    const toNaive   = realToNaive(new Date(to.getTime() + pad), tz);
+
+    const naiveStarts = ev.rrule
+      ? expandRecurrence(ev.start, ev.rrule, fromNaive, toNaive, ev.exdates, tz)
+      : [ev.start];
+
+    for (const naive of naiveStarts) {
+      const s = naiveToReal(naive, tz);
+      if (s < from || s > to) continue;
+      out.push({
+        uid:         ev.uid || null,
+        title:       ev.title || '(no title)',
+        description: ev.description || '',
+        location:    ev.location || '',
+        allDay:      !!ev.allDay,
+        start:       s.toISOString(),
+        end:         new Date(s.getTime() + durationMs).toISOString(),
+        recurring:   !!ev.rrule,
+      });
+      if (out.length > 2000) break;
+    }
+    if (out.length > 2000) break;
+  }
+
+  out.sort((a, b) => new Date(a.start) - new Date(b.start));
+  return out;
+}
+
+const calendarCache = new Map(); // icsUrl → { at, events }
+const CALENDAR_TTL  = 5 * 60 * 1000;
+
+app.get('/api/calendar', requireAuth, async (req, res) => {
+  try {
+    const icsUrl = icsUrlFor(req.query.src);
+
+    const now  = Date.now();
+    const from = req.query.from ? new Date(req.query.from) : new Date(now - 120 * 86400000);
+    const to   = req.query.to   ? new Date(req.query.to)   : new Date(now + 400 * 86400000);
+
+    const cacheKey = `${icsUrl}|${from.toISOString()}|${to.toISOString()}`;
+    const hit = calendarCache.get(cacheKey);
+    if (hit && now - hit.at < CALENDAR_TTL && !req.query.nocache) {
+      return res.json({ events: hit.events, cached: true });
+    }
+
+    const resp = await fetch(icsUrl, {
+      headers: { 'User-Agent': 'zq1anddar0-home/1.0' },
+      redirect: 'follow',
+    });
+
+    if (!resp.ok) {
+      const hint = resp.status === 404
+        ? 'Calendar not found, or it is not shared publicly. In Google Calendar → Settings → your calendar → "Make available to public", then copy the calendar ID.'
+        : `Google returned ${resp.status}.`;
+      return res.status(502).json({ error: hint });
+    }
+
+    const text = await resp.text();
+    if (!/BEGIN:VCALENDAR/i.test(text)) {
+      return res.status(502).json({ error: 'That URL did not return a calendar feed.' });
+    }
+
+    const events = parseICS(text, from, to);
+    calendarCache.set(cacheKey, { at: now, events });
+    res.json({ events, cached: false });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ── Catch-all (must be AFTER API routes) ──────────────────
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
@@ -739,7 +1267,7 @@ app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 const PORT = process.env.PORT || 3000;
 connectDB()
   .then(() => {
-    initAlexa();
+    initAlexa().catch(err => console.error('Alexa startup failed:', err.message));
     app.listen(PORT, () => console.log(`Listening on ${PORT}`));
     // Run bill reminder check immediately and every 6 hours
     checkBillReminders();

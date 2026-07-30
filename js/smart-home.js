@@ -76,6 +76,7 @@ let allRooms   = [];
 let allDevices = []; // normalised — both SmartThings + Alexa
 let activeRoom = null;
 let alexaConfigured = false;
+let alexaStatus = null;
 
 // ============================================================
 // LOAD  (SmartThings + Alexa in parallel)
@@ -148,6 +149,8 @@ async function loadSTDevices() {
 async function loadAlexaDevices() {
   const status = await alexaFetch('/status');
   alexaConfigured = status.configured;
+  alexaStatus     = status;
+  renderAlexaStatusPill(status);
   if (!status.ready) {
     if (status.configured) console.warn('Alexa configured but not ready:', status.error);
     return;
@@ -392,12 +395,112 @@ function showToast(msg, isError = false) {
 }
 
 // ============================================================
+// ALEXA CONNECTION (cookie / registration-token auth)
+// ============================================================
+// Amazon blocks headless email+password login, so the server holds a
+// registration token the user generates once on their own machine.
+
+function renderAlexaStatusPill(status) {
+  const pill = document.getElementById('alexaStatusPill');
+  if (!pill) return;
+
+  let cls, icon, text;
+
+  if (status?.ready) {
+    cls  = 'is-ready';
+    icon = 'fa-circle-check';
+    const when = status.connectedAt
+      ? new Date(status.connectedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : null;
+    text = `Connected via ${status.mode === 'cookie' ? 'saved token' : 'email login'}${when ? ` · since ${when}` : ''}`;
+  } else if (status?.mode === 'none') {
+    cls  = 'is-idle';
+    icon = 'fa-circle-info';
+    text = 'Not connected yet — follow the steps below.';
+  } else {
+    cls  = 'is-error';
+    icon = 'fa-circle-exclamation';
+    const hint = status?.mode === 'password'
+      ? ' Amazon rejects password login from a server — use the token method below.'
+      : '';
+    text = `${status?.error || 'Alexa is not connected.'}${hint}`;
+  }
+
+  pill.className = `sh-alexa-status ${cls}`;
+  pill.innerHTML = `<i class="fas ${icon}"></i><span class="sh-alexa-status-text">${text}</span>`;
+}
+
+async function refreshAlexaStatus() {
+  try {
+    const status = await alexaFetch('/status');
+    alexaStatus     = status;
+    alexaConfigured = status.configured;
+    renderAlexaStatusPill(status);
+  } catch (err) {
+    renderAlexaStatusPill({ ready: false, error: err.message });
+  }
+}
+
+function setAlexaBusy(text) {
+  const pill = document.getElementById('alexaStatusPill');
+  if (!pill) return;
+  pill.className = 'sh-alexa-status is-idle';
+  pill.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i><span class="sh-alexa-status-text">${text}</span>`;
+}
+
+async function connectAlexa() {
+  const box = document.getElementById('alexaBlobInput');
+  const raw = box?.value.trim();
+  if (!raw) { showToast('Paste the registration JSON first.', true); return; }
+
+  setAlexaBusy('Connecting to Amazon…');
+  try {
+    await alexaFetch('/connect', { method: 'POST', body: JSON.stringify({ cookie: raw }) });
+    box.value = '';
+    showToast('Alexa connected.');
+    await refreshAlexaStatus();
+    loadDevices();
+  } catch (err) {
+    showToast(err.message, true);
+    renderAlexaStatusPill({ ready: false, error: err.message });
+  }
+}
+
+async function reconnectAlexa() {
+  setAlexaBusy('Retrying with the saved token…');
+  try {
+    await alexaFetch('/reconnect', { method: 'POST' });
+    showToast('Alexa reconnected.');
+    await refreshAlexaStatus();
+    loadDevices();
+  } catch (err) {
+    showToast(err.message, true);
+    renderAlexaStatusPill({ ready: false, error: err.message });
+  }
+}
+
+async function disconnectAlexa() {
+  setAlexaBusy('Removing saved credentials…');
+  try {
+    await alexaFetch('/connect', { method: 'DELETE' });
+    showToast('Alexa disconnected.');
+    allDevices = allDevices.filter(d => d._source !== 'alexa');
+    await refreshAlexaStatus();
+    renderRoomTabs();
+    renderDevices();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+// ============================================================
 // SETTINGS MODAL
 // ============================================================
 function openSettings() {
   const input = document.getElementById('stPATInput');
   if (input) input.value = getPAT();
   document.getElementById('settingsModal').classList.remove('hidden');
+  refreshAlexaStatus();
 }
 
 function closeSettings() {
@@ -438,6 +541,10 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     showAuthBanner();
   }
+
+  // Alexa lives on the server, so its state is worth knowing even
+  // before SmartThings is wired up
+  refreshAlexaStatus();
 
   document.getElementById('settingsModal').addEventListener('click', e => {
     if (e.target === document.getElementById('settingsModal')) closeSettings();

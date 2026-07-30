@@ -1721,19 +1721,25 @@ body {
   border: 1px solid #a9dfbf;
 }
 
-.sh-platform-alexa {
-  background: #fff8e1;
-  color: #b7770d;
-  border: 1px solid #f9e49a;
+.sh-platform-st.sh-platform-warn {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
 }
 
-.sh-platform-alexa.sh-platform-active {
-  background: #fff3cd;
-  color: #856404;
-  border-color: #f9c74f;
+.sh-platform-govee {
+  background: #e3f4fb;
+  color: #0b7bab;
+  border: 1px solid #a8ddf2;
 }
 
-.sh-platform-alexa.sh-platform-warn {
+.sh-platform-govee.sh-platform-active {
+  background: #d5eefa;
+  color: #08678f;
+  border-color: #7fcdec;
+}
+
+.sh-platform-govee.sh-platform-warn {
   background: #fff3e0;
   color: #e65100;
   border-color: #ffcc80;
@@ -1745,17 +1751,17 @@ body {
   border: 1px solid #e0e0e0;
 }
 
-/* Alexa room tab */
-.sh-tab-alexa.active {
-  background: #f9a825;
-  border-color: #f9a825;
+/* Govee room tab */
+.sh-tab-govee.active {
+  background: #0f9bd7;
+  border-color: #0f9bd7;
   color: #fff;
 }
 
-.sh-tab-alexa:not(.active) {
-  color: #b7770d;
-  border-color: #f9e49a;
-  background: #fff8e1;
+.sh-tab-govee:not(.active) {
+  color: #0b7bab;
+  border-color: #a8ddf2;
+  background: #e3f4fb;
 }
 
 /* Source badge on device cards */
@@ -1773,11 +1779,49 @@ body {
   flex-shrink: 0;
 }
 
-.sh-badge-alexa {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #f9c74f;
+.sh-badge-govee {
+  background: #e3f4fb;
+  color: #0b7bab;
+  border: 1px solid #a8ddf2;
 }
+
+/* Brightness slider row (Govee lights) */
+.sh-device-card { flex-wrap: wrap; }
+
+.sh-brightness-row {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sh-brightness-row i {
+  font-size: 0.75rem;
+  color: #c2a06b;
+  flex-shrink: 0;
+}
+
+.sh-brightness-row input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: #0f9bd7;
+  cursor: pointer;
+}
+
+.sh-brightness-val {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8d7461;
+  min-width: 3em;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.sh-card-offline { opacity: 0.55; }
+.sh-card-offline .sh-toggle { pointer-events: none; }
 
 /* Env block in settings */
 .sh-env-block {
@@ -3232,11 +3276,12 @@ body:has(.page-content) {
   .room-overlay h2 { font-size: 1.2rem; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+/* ════════════════════════════════════════════════════════════
    LUXURY THEME LAYER
    Loaded last so it refines everything above it. Warm espresso +
-   antique gold on cream â€” quiet, not shouty.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   antique gold on cream — quiet, not shouty.
+   ════════════════════════════════════════════════════════════ */
 
 :root {
   /* Surfaces */
@@ -3279,7 +3324,7 @@ body:has(.page-content) {
   --lux-serif:     'Cormorant Garamond', Georgia, 'Times New Roman', serif;
 }
 
-/* â”€â”€ Page canvas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Page canvas ─────────────────────────────────────────── */
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
@@ -3291,7 +3336,7 @@ body {
     linear-gradient(180deg, var(--lux-page) 0%, var(--lux-page-2) 100%);
   background-attachment: fixed;
   color: var(--lux-ink);
-  /* Nothing may push past the viewport â€” the old calendar iframe did */
+  /* Nothing may push past the viewport — the old calendar iframe did */
   overflow-x: hidden;
 }
 
@@ -3300,7 +3345,7 @@ img, iframe, video, canvas, table, pre {
   max-width: 100%;
 }
 
-/* â”€â”€ Display type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Display type ────────────────────────────────────────── */
 h1, h2, h3,
 .h2,
 .home-hero-title,
@@ -3334,9 +3379,9 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   color: var(--lux-gold-deep);
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    NAVIGATION
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .navbar {
   background: rgba(31, 21, 13, 0.86);
   -webkit-backdrop-filter: saturate(160%) blur(16px);
@@ -3405,10 +3450,10 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    CARDS & SECTIONS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-/* The old rule pinned every section to 50vh â€” content boxes now
+   ════════════════════════════════════════════════════════════ */
+/* The old rule pinned every section to 50vh — content boxes now
    size to their content; only the image room tiles stay fixed. */
 .section:not(.room) {
   height: auto;
@@ -3488,9 +3533,9 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   text-align: left;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    BUTTONS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .btn-primary,
 .btn-add,
 .sh-btn-connect {
@@ -3550,9 +3595,9 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   text-decoration: none;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    FORMS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .form-group label,
 .room-cal-settings-label {
   font-family: 'Inter', sans-serif;
@@ -3591,9 +3636,9 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   box-shadow: 0 0 0 3px rgba(194, 160, 107, 0.18);
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    MODALS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .modal {
   background: rgba(31, 21, 13, 0.5);
   -webkit-backdrop-filter: blur(6px);
@@ -3611,9 +3656,9 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
 .modal-header h2, .modal-header h3 { font-size: 1.4rem; }
 .modal-header i { color: var(--lux-gold-deep); font-size: 0.85em; }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    HOME PAGE REFINEMENTS
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .home-hero { padding: 118px 24px 4px; }
 .home-hero-title { font-family: var(--lux-serif); font-weight: 500; }
 .home-hero-sub { color: var(--lux-muted); font-size: 1.02rem; }
@@ -3645,9 +3690,9 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   border-radius: 999px;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    ROOM PAGES
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .room-main {
   max-width: 860px;
   width: 100%;
@@ -3658,7 +3703,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   gap: 22px;
 }
 
-/* â”€â”€ Hero banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Hero banner ─────────────────────────────────────────── */
 .room-hero {
   position: relative;
   height: clamp(210px, 34vh, 320px);
@@ -3712,7 +3757,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   background: linear-gradient(90deg, var(--lux-gold), transparent);
 }
 
-/* â”€â”€ Stats strip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Stats strip ─────────────────────────────────────────── */
 .room-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3771,7 +3816,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   to   { background-position: -40% 0; }
 }
 
-/* â”€â”€ Quick link tiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Quick link tiles ────────────────────────────────────── */
 .room-quick-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3818,11 +3863,11 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   .room-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    ROOM CALENDAR
-   A real grid instead of the Google iframe â€” it can no longer
+   A real grid instead of the Google iframe — it can no longer
    overflow because every track is minmax(0, 1fr).
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 .room-cal { display: block; width: 100%; min-width: 0; }
 
 .room-cal-card {
@@ -3834,7 +3879,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   width: 100%;
 }
 
-/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Header ──────────────────────────────────────────────── */
 .room-cal-head {
   padding: 20px 20px 14px;
   border-bottom: 1px solid var(--lux-line-soft);
@@ -3957,7 +4002,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   box-shadow: var(--lux-shadow-sm);
 }
 
-/* â”€â”€ Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Body ────────────────────────────────────────────────── */
 .room-cal-body { padding: 16px 16px 18px; min-width: 0; }
 
 .room-cal-weekdays,
@@ -4058,7 +4103,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
 
 .room-cal-cell.is-selected .room-cal-dot { background: var(--lux-gold-soft); }
 
-/* â”€â”€ Day panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Day panel ───────────────────────────────────────────── */
 .room-cal-daypanel {
   margin-top: 16px;
   padding-top: 14px;
@@ -4095,7 +4140,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   padding: 6px 0 2px;
 }
 
-/* â”€â”€ Event rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Event rows ──────────────────────────────────────────── */
 .room-cal-event-list {
   list-style: none;
   padding: 0;
@@ -4178,7 +4223,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   padding-top: 4px;
 }
 
-/* â”€â”€ Agenda view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Agenda view ─────────────────────────────────────────── */
 .room-cal-agenda {
   display: flex;
   flex-direction: column;
@@ -4228,7 +4273,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   color: var(--lux-muted);
 }
 
-/* â”€â”€ Empty / error / settings states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Empty / error / settings states ─────────────────────── */
 .room-cal-empty {
   display: flex;
   flex-direction: column;
@@ -4302,7 +4347,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   margin-top: 4px;
 }
 
-/* â”€â”€ Loading skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Loading skeleton ────────────────────────────────────── */
 .room-cal-skeleton {
   display: flex;
   flex-direction: column;
@@ -4335,17 +4380,17 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   .room-cal-agenda-group { grid-template-columns: 42px minmax(0, 1fr); gap: 9px; }
 }
 
-/* Legacy iframe container â€” kept for any page still embedding one */
+/* Legacy iframe container — kept for any page still embedding one */
 .iframe {
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SMART HOME â€” ALEXA CONNECT PANEL
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-.sh-alexa-status {
+/* ════════════════════════════════════════════════════════════
+   SMART HOME — PLATFORM CONNECT PANEL (Govee etc.)
+   ════════════════════════════════════════════════════════════ */
+.sh-conn-status {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -4359,26 +4404,26 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   color: var(--lux-ink-2);
   text-align: left;
 }
-.sh-alexa-status i { flex-shrink: 0; }
-.sh-alexa-status.is-ready {
+.sh-conn-status i { flex-shrink: 0; }
+.sh-conn-status.is-ready {
   border-color: rgba(127, 145, 116, 0.45);
   background: rgba(127, 145, 116, 0.10);
   color: #4e5f45;
 }
-.sh-alexa-status.is-error {
+.sh-conn-status.is-error {
   border-color: rgba(180, 69, 60, 0.35);
   background: rgba(180, 69, 60, 0.08);
   color: #8f342c;
 }
-.sh-alexa-status.is-idle {
+.sh-conn-status.is-idle {
   border-color: rgba(194, 160, 107, 0.45);
   background: rgba(194, 160, 107, 0.10);
   color: var(--lux-gold-deep);
 }
-.sh-alexa-status-text { min-width: 0; overflow-wrap: anywhere; }
+.sh-conn-status-text { min-width: 0; overflow-wrap: anywhere; }
 
-.sh-alexa-steps {
-  counter-reset: alexastep;
+.sh-conn-steps {
+  counter-reset: connstep;
   list-style: none;
   padding: 0;
   margin: 10px 0 14px;
@@ -4389,8 +4434,8 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   gap: 10px;
 }
 
-.sh-alexa-steps li {
-  counter-increment: alexastep;
+.sh-conn-steps li {
+  counter-increment: connstep;
   position: relative;
   padding-left: 34px;
   font-size: 0.85rem;
@@ -4399,8 +4444,8 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   text-align: left;
 }
 
-.sh-alexa-steps li::before {
-  content: counter(alexastep);
+.sh-conn-steps li::before {
+  content: counter(connstep);
   position: absolute;
   left: 0;
   top: 1px;
@@ -4416,7 +4461,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   justify-content: center;
 }
 
-.sh-alexa-steps code,
+.sh-conn-steps code,
 .sh-env-block code {
   display: block;
   background: var(--lux-espresso);
@@ -4430,25 +4475,7 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   white-space: pre;
 }
 
-.sh-alexa-blob {
-  width: 100%;
-  min-height: 96px;
-  resize: vertical;
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 0.76rem;
-  background: var(--lux-surface-2);
-  border: 1px solid var(--lux-line);
-  border-radius: 10px;
-  padding: 11px 13px;
-  color: var(--lux-ink);
-}
-.sh-alexa-blob:focus {
-  outline: none;
-  border-color: var(--lux-gold);
-  box-shadow: 0 0 0 3px rgba(194, 160, 107, 0.18);
-}
-
-.sh-alexa-note {
+.sh-conn-note {
   font-size: 0.78rem;
   color: var(--lux-muted);
   line-height: 1.55;
@@ -4460,11 +4487,11 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   margin-top: 12px;
   text-align: left;
 }
-.sh-alexa-note strong { color: var(--lux-ink-2); }
+.sh-conn-note strong { color: var(--lux-ink-2); }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════
    MOTION PREFERENCES
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -4474,4 +4501,3 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   }
   .reveal { opacity: 1; transform: none; }
 }
-

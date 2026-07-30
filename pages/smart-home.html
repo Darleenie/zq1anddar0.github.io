@@ -33,13 +33,13 @@
       </div>
     </div>
 
-    <!-- Auth banner (shown when no PAT or API error) -->
+    <!-- Auth banner (shown when nothing is connected yet) -->
     <div id="authBanner" class="sh-auth-banner" style="display:none">
       <div class="sh-auth-banner-inner">
         <i class="fas fa-key"></i>
         <div>
-          <strong>Connect SmartThings</strong>
-          <p>Enter your SmartThings Personal Access Token to see and control your devices.</p>
+          <strong>Connect a platform</strong>
+          <p>Add your SmartThings token or Govee API key in Settings to see and control your devices.</p>
         </div>
         <button class="sh-btn-connect" onclick="openSettings()">Connect</button>
       </div>
@@ -50,10 +50,10 @@
       <span class="sh-platform-badge sh-platform-st" title="SmartThings connected">
         <i class="fas fa-check-circle"></i> SmartThings
       </span>
-      <span class="sh-platform-badge sh-platform-alexa" title="Alexa — status updates on load">
-        <i class="fab fa-amazon"></i> Alexa
+      <span class="sh-platform-badge sh-platform-govee" style="display:none" title="Govee — status updates on load">
+        <i class="fas fa-lightbulb"></i> Govee
       </span>
-      <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">Aqara</span>
+      <span class="sh-platform-badge sh-platform-other" title="Bridge via SmartThings">Aqara</span>
       <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">Sengled</span>
       <span class="sh-platform-badge sh-platform-other" title="Connect via SmartThings">Google / Nest</span>
     </div>
@@ -104,75 +104,62 @@
       </div>
 
       <div class="sh-settings-section">
-        <h3><i class="fab fa-amazon" style="color:#f90"></i> Amazon Alexa</h3>
+        <h3><i class="fas fa-lightbulb" style="color:#0f9bd7"></i> Govee</h3>
 
         <!-- Live connection state -->
-        <div class="sh-alexa-status is-idle" id="alexaStatusPill">
+        <div class="sh-conn-status is-idle" id="goveeStatusPill">
           <i class="fas fa-circle-notch fa-spin"></i>
-          <span class="sh-alexa-status-text">Checking Alexa connection…</span>
+          <span class="sh-conn-status-text">Checking Govee connection…</span>
         </div>
 
         <p class="sh-settings-desc">
-          Amazon no longer allows a server to sign in with just an email and password —
-          the login demands a one-time code and blocks cloud IPs, which is why
-          <strong>AMAZON_EMAIL / AMAZON_PASSWORD never connects on Heroku</strong>.
-          Instead, log in <em>once from your own computer</em> and paste the resulting token here.
-          It is stored on the server and refreshes itself automatically.
+          Govee has an official public API, so this connects directly — no hub, no tricks.
+          The key is stored on the server and never shown again.
         </p>
 
-        <ol class="sh-alexa-steps">
-          <li>
-            On your home computer (same network as your Echo), run:
-            <code>npx alexa-cookie-cli</code>
-          </li>
-          <li>
-            Open <strong>http://localhost:8080</strong> in your browser and sign in to Amazon
-            normally — including the OTP code. This part works because it's your own machine.
-          </li>
-          <li>
-            The tool prints a JSON blob containing <code>refreshToken</code> and <code>macDms</code>.
-            Copy the whole thing, braces included.
-          </li>
-          <li>Paste it below and press <strong>Connect Alexa</strong>.</li>
+        <ol class="sh-conn-steps">
+          <li>Open the <strong>Govee Home</strong> app on your phone.</li>
+          <li>Go to <strong>Profile (👤) → ⚙ Settings → Apply for API Key</strong>, fill in the short form.</li>
+          <li>The key arrives by <strong>email</strong> within a few minutes.</li>
+          <li>Paste it below and press <strong>Connect Govee</strong>.</li>
         </ol>
 
         <div class="form-group">
-          <label for="alexaBlobInput">Registration JSON (or raw cookie string)</label>
-          <textarea id="alexaBlobInput" class="sh-alexa-blob"
-                    placeholder='{"loginCookie":"…","refreshToken":"Atnr|…","macDms":{…}}'
-                    autocomplete="off" spellcheck="false"></textarea>
+          <label for="goveeKeyInput">Govee API Key</label>
+          <div class="sh-token-row">
+            <input type="password" id="goveeKeyInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+            <button class="sh-token-toggle" type="button" onclick="toggleGoveeKeyVis()" title="Show/hide">
+              <i class="fas fa-eye" id="goveeEyeIcon"></i>
+            </button>
+          </div>
         </div>
 
         <div class="form-actions">
-          <button class="btn-secondary" onclick="disconnectAlexa()">
-            <i class="fas fa-link-slash"></i> Disconnect
-          </button>
-          <button class="btn-secondary" onclick="reconnectAlexa()">
-            <i class="fas fa-rotate-right"></i> Retry
-          </button>
-          <button class="btn-primary" onclick="connectAlexa()">
-            <i class="fab fa-amazon"></i> Connect Alexa
-          </button>
+          <button class="btn-secondary" onclick="clearGoveeKey()"><i class="fas fa-link-slash"></i> Disconnect</button>
+          <button class="btn-primary" onclick="saveGoveeKey()"><i class="fas fa-plug"></i> Connect Govee</button>
         </div>
 
-        <p class="sh-alexa-note">
-          <strong>Don't want to bother with tokens?</strong> There's a simpler route that never breaks:
-          keep controlling devices through <strong>SmartThings</strong> (already connected above), and
-          create a <strong>Virtual Switch</strong> in SmartThings for each Alexa Routine you want to fire.
-          In the Alexa app, set the Routine's trigger to that virtual switch. Flipping it from this page
-          then runs the Alexa scene — no Amazon login required anywhere.
+        <p class="sh-conn-note">
+          <strong>Heads up:</strong> the Govee cloud API only exposes <strong>WiFi</strong> models.
+          Bluetooth-only strips, sensors and thermometers won't appear unless they're paired
+          through a Govee WiFi gateway.
         </p>
       </div>
 
       <div class="sh-settings-section sh-settings-other">
-        <h3><i class="fas fa-info-circle"></i> Other Platforms (via SmartThings)</h3>
+        <h3><i class="fas fa-circle-nodes" style="color:#7b5ea7"></i> Aqara &amp; other Zigbee brands</h3>
         <p class="sh-settings-desc">
-          Connect these to SmartThings and they'll appear automatically in the device list.
+          Aqara devices speak <strong>Zigbee</strong> — a local radio protocol this web app
+          physically can't reach from the cloud. They need <em>a</em> hub, but not a new
+          integration: bridge them into <strong>SmartThings</strong> once and they appear in
+          the device list above automatically.
         </p>
         <ul class="sh-platform-list">
-          <li><i class="fas fa-circle-notch"></i> Aqara → SmartThings via Matter or Zigbee hub</li>
-          <li><i class="fas fa-circle-notch"></i> Sengled → SmartThings via Sengled Hub integration</li>
-          <li><i class="fas fa-circle-notch"></i> Google Nest → SmartThings via Google Home cloud link</li>
+          <li><i class="fas fa-circle-notch"></i> <strong>Aqara hub (M2/M3/E1):</strong> SmartThings app → Add device → Partner devices → Aqara, sign in to your Aqara account — or pair via <strong>Matter</strong> if the hub supports it.</li>
+          <li><i class="fas fa-circle-notch"></i> <strong>SmartThings hub:</strong> pair Aqara sensors directly to it over Zigbee (no Aqara hub needed).</li>
+          <li><i class="fas fa-circle-notch"></i> <strong>Sengled</strong> → SmartThings via Sengled Hub integration.</li>
+          <li><i class="fas fa-circle-notch"></i> <strong>Google Nest</strong> → SmartThings via Google Home cloud link.</li>
+          <li><i class="fas fa-circle-notch"></i> <strong>Anything Matter-certified</strong> → pair with SmartThings and it shows up here.</li>
         </ul>
       </div>
 

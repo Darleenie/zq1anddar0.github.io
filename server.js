@@ -2,7 +2,6 @@ const express  = require('express');
 const path     = require('path');
 const crypto   = require('crypto');
 const { MongoClient, ObjectId } = require('mongodb');
-const AlexaRemote = require('alexa-remote2');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -283,260 +282,201 @@ app.post('/api/items/bulk', optionalAuth, async (req, res) => {
 });
 
 // ============================================================
-// ALEXA (alexa-remote2 proxy — credentials stay server-side)
+// GOVEE  (official Platform API — key stays server-side)
 // ============================================================
-// Amazon has effectively killed headless email+password login: the sign-in
-// flow now demands OTP / captcha and hard-blocks datacenter IPs (Heroku).
-// The path that actually works is cookie auth — the user runs the
-// alexa-cookie proxy once from their home network, pastes the resulting
-// registration JSON in here, and we persist + auto-refresh it forever.
-let alexa           = null;
-let alexaReady      = false;
-let alexaError      = null;
-let alexaMode       = 'none';   // 'cookie' | 'password' | 'none'
-let alexaConnectedAt = null;
+// Govee publishes a real public API, so unlike Alexa this is a
+// first-class integration: apply for a key in the Govee Home app
+// (Profile → ⚙ Settings → "Apply for API Key"), paste it in the
+// Smart Home settings, done. Key is stored in Mongo with an env
+// fallback (GOVEE_API_KEY) for Heroku config vars.
 
-const ALEXA_CRED_ID = 'alexa_credentials';
+const GOVEE_BASE    = 'https://openapi.api.govee.com/router/api/v1';
+const GOVEE_CRED_ID = 'govee_credentials';
 
-// Registration blob straight from the alexa-cookie proxy, or a raw cookie
-// string. Accepts either shape; JSON wins when it parses.
-function parseAlexaBlob(raw) {
-  if (!raw) return null;
-  if (typeof raw === 'object') return raw;
-  const text = String(raw).trim();
-  if (!text) return null;
-  if (text.startsWith('{')) {
-    try {
-      const obj = JSON.parse(text);
-      // The proxy sometimes wraps it as { cookieData: {...} }
-      return obj.cookieData || obj;
-    } catch {
-      throw new Error('That looks like JSON but it did not parse. Copy the whole blob, including the outer { }.');
-    }
-  }
-  return text; // raw cookie string
+async function getGoveeKeyInfo() {
+  try {
+    const doc = await db.collection('settings').findOne({ _id: GOVEE_CRED_ID });
+    if (doc?.apiKey) return { key: doc.apiKey, source: 'db' };
+  } catch {}
+  if (process.env.GOVEE_API_KEY) return { key: process.env.GOVEE_API_KEY, source: 'env' };
+  return { key: null, source: null };
 }
 
-function describeAlexaBlob(blob) {
-  if (!blob) return null;
-  if (typeof blob === 'string') return { kind: 'cookie-string' };
+async function getGoveeKey() {
+  return (await getGoveeKeyInfo()).key;
+}
+
+async function goveeFetch(apiKey, path, body) {
+  const res = await fetch(GOVEE_BASE + path, {
+    method:  body ? 'POST' : 'GET',
+    headers: { 'Govee-API-Key': apiKey, 'Content-Type': 'application/json' },
+    body:    body ? JSON.stringify(body) : undefined,
+  });
+
+  let json = null;
+  try { json = JSON.parse(await res.text()); } catch {}
+
+  if (res.status === 401 || res.status === 403) {
+    throw Object.assign(new Error('Govee rejected the API key.'), { status: 401 });
+  }
+  if (res.status === 429) {
+    throw Object.assign(new Error('Govee rate limit reached — wait a minute and retry.'), { status: 429 });
+  }
+  if (!res.ok || (json && json.code && json.code !== 200)) {
+    const detail = json?.message || json?.msg || `HTTP ${res.status}`;
+    throw Object.assign(new Error(`Govee error: ${detail}`), { status: res.status });
+  }
+  return json || {};
+}
+
+// Normalise the capability list of a device from GET /user/devices
+function goveeCaps(device) {
+  const caps = device.capabilities || [];
+  const has  = (type, instance) =>
+    caps.some(c => c.type === `devices.capabilities.${type}` && c.instance === instance);
   return {
-    kind:          'registration',
-    hasRefresh:    !!blob.refreshToken,
-    hasMacDms:     !!blob.macDms,
-    amazonPage:    blob.amazonPage || null,
-    tokenDate:     blob.tokenDate || null,
+    onOff:      has('on_off', 'powerSwitch'),
+    brightness: has('range', 'brightness'),
+    color:      has('color_setting', 'colorRgb'),
   };
 }
 
-async function loadStoredAlexaBlob() {
-  if (!db) return null;
-  const doc = await db.collection('settings').findOne({ _id: ALEXA_CRED_ID });
-  return doc?.blob || null;
-}
-
-async function saveAlexaBlob(blob) {
-  await db.collection('settings').updateOne(
-    { _id: ALEXA_CRED_ID },
-    { $set: { blob, updatedAt: new Date() } },
-    { upsert: true },
-  );
-}
-
-// Env fallback so the connection can also be set without touching the UI
-function envAlexaBlob() {
-  const raw = process.env.ALEXA_COOKIE || process.env.ALEXA_REFRESH_TOKEN;
-  if (!raw) return null;
-  try { return parseAlexaBlob(raw); } catch { return raw; }
-}
-
-function initAlexa(overrideBlob = null) {
-  return new Promise(async (resolve) => {
-    let blob = overrideBlob;
-    if (!blob) {
-      try { blob = await loadStoredAlexaBlob(); } catch (err) {
-        console.error('Alexa: could not read stored credentials:', err.message);
-      }
+// Pull the values we care about out of a /device/state response
+function goveeStateValues(payload) {
+  const out = { online: null, on: null, brightness: null };
+  for (const cap of payload?.capabilities || []) {
+    const v = cap.state?.value;
+    if (cap.type === 'devices.capabilities.online' && cap.instance === 'online') {
+      out.online = v === true || v === 'true';
+    } else if (cap.type === 'devices.capabilities.on_off' && cap.instance === 'powerSwitch') {
+      out.on = v === 1 || v === '1' || v === true;
+    } else if (cap.type === 'devices.capabilities.range' && cap.instance === 'brightness') {
+      out.brightness = typeof v === 'number' ? v : null;
     }
-    if (!blob) blob = envAlexaBlob();
-
-    const email    = process.env.AMAZON_EMAIL;
-    const password = process.env.AMAZON_PASSWORD;
-
-    const opts = {
-      cookieRefreshInterval: 4 * 24 * 60 * 60 * 1000,
-      alexaServiceHost: 'alexa.amazon.com',
-      amazonPage:       'amazon.com',
-      acceptLanguage:   'en-US',
-      useWsMqtt:        false,
-    };
-
-    if (blob) {
-      opts.cookie = blob;
-      alexaMode   = 'cookie';
-    } else if (email && password) {
-      opts.email    = email;
-      opts.password = password;
-      alexaMode     = 'password';
-      console.log('Alexa: falling back to email/password — this usually fails on Amazon accounts with 2FA.');
-    } else {
-      alexaMode  = 'none';
-      alexaReady = false;
-      alexaError = null;
-      console.log('Alexa: no credentials configured — skipping');
-      return resolve({ ready: false, mode: 'none' });
-    }
-
-    alexa = new AlexaRemote();
-
-    // Persist refreshed credentials so a dyno restart stays signed in
-    alexa.on('cookie', () => {
-      const fresh = alexa?.cookieData;
-      if (!fresh) return;
-      saveAlexaBlob(fresh)
-        .then(() => console.log('Alexa: refreshed credentials saved'))
-        .catch(err => console.error('Alexa: failed to save refreshed credentials:', err.message));
-    });
-
-    alexa.init(opts, (err) => {
-      if (err) {
-        const msg = err.message || String(err);
-        console.error('Alexa init error:', msg);
-        alexaError       = msg;
-        alexaReady       = false;
-        alexaConnectedAt = null;
-      } else {
-        console.log(`Alexa connected (${alexaMode})`);
-        alexaReady       = true;
-        alexaError       = null;
-        alexaConnectedAt = new Date();
-        if (alexaMode === 'cookie' && alexa.cookieData) {
-          saveAlexaBlob(alexa.cookieData).catch(() => {});
-        }
-      }
-      resolve({ ready: alexaReady, mode: alexaMode, error: alexaError });
-    });
-  });
+  }
+  return out;
 }
 
 // ── GET status ─────────────────────────────────────────────
-app.get('/api/alexa/status', requireAuth, async (_req, res) => {
-  let stored = null;
-  try { stored = await loadStoredAlexaBlob(); } catch {}
-  res.json({
-    ready:       alexaReady,
-    error:       alexaError,
-    mode:        alexaMode,
-    configured:  alexaMode !== 'none',
-    connectedAt: alexaConnectedAt,
-    stored:      describeAlexaBlob(stored),
-    envPassword: !!(process.env.AMAZON_EMAIL && process.env.AMAZON_PASSWORD),
-  });
+app.get('/api/govee/status', requireAuth, async (_req, res) => {
+  const info = await getGoveeKeyInfo();
+  res.json({ configured: !!info.key, source: info.source });
 });
 
-// ── POST connect — paste registration blob / cookie ────────
-app.post('/api/alexa/connect', requireAuth, async (req, res) => {
+// ── POST key — validate against Govee, then save ───────────
+app.post('/api/govee/key', requireAuth, async (req, res) => {
   try {
-    const blob = parseAlexaBlob(req.body?.cookie);
-    if (!blob) return res.status(400).json({ error: 'Paste the cookie or registration JSON first.' });
+    const apiKey = String(req.body?.apiKey || '').trim();
+    if (!apiKey) return res.status(400).json({ error: 'Paste your Govee API key first.' });
 
-    if (typeof blob === 'object' && !blob.localCookie && !blob.refreshToken) {
-      return res.status(400).json({
-        error: 'That JSON has no localCookie or refreshToken — it is not an alexa-cookie registration blob.',
-      });
-    }
+    const result = await goveeFetch(apiKey, '/user/devices');
+    const count  = (result.data || []).length;
 
-    await saveAlexaBlob(blob);
-    const result = await initAlexa(blob);
-    if (!result.ready) {
-      return res.status(502).json({ error: result.error || 'Amazon rejected those credentials.' });
-    }
-    res.json({ success: true, mode: result.mode });
+    await db.collection('settings').updateOne(
+      { _id: GOVEE_CRED_ID },
+      { $set: { apiKey, updatedAt: new Date() } },
+      { upsert: true },
+    );
+    res.json({ success: true, deviceCount: count });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(err.status === 401 ? 400 : 502).json({ error: err.message });
   }
 });
 
-// ── POST reconnect — retry with whatever is stored ─────────
-app.post('/api/alexa/reconnect', requireAuth, async (_req, res) => {
-  const result = await initAlexa();
-  if (!result.ready) {
-    return res.status(502).json({ error: result.error || 'Could not connect to Alexa.' });
-  }
-  res.json({ success: true, mode: result.mode });
-});
-
-// ── DELETE disconnect — forget stored credentials ──────────
-app.delete('/api/alexa/connect', requireAuth, async (_req, res) => {
+// ── DELETE key ─────────────────────────────────────────────
+app.delete('/api/govee/key', requireAuth, async (_req, res) => {
   try {
-    await db.collection('settings').deleteOne({ _id: ALEXA_CRED_ID });
-    alexa = null;
-    alexaReady = false;
-    alexaError = null;
-    alexaMode  = 'none';
-    alexaConnectedAt = null;
-    res.json({ success: true });
+    await db.collection('settings').deleteOne({ _id: GOVEE_CRED_ID });
+    // A GOVEE_API_KEY config var keeps the connection alive regardless —
+    // tell the client so it can explain instead of claiming disconnection
+    res.json({ success: true, envFallback: !!process.env.GOVEE_API_KEY });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── GET devices ────────────────────────────────────────────
-app.get('/api/alexa/devices', requireAuth, (_req, res) => {
-  if (!alexaReady || !alexa) {
-    return res.status(503).json({ error: alexaError || 'Alexa not connected.' });
+// ── GET devices (normalised) ───────────────────────────────
+app.get('/api/govee/devices', requireAuth, async (_req, res) => {
+  try {
+    const key = await getGoveeKey();
+    if (!key) return res.status(503).json({ error: 'Govee not connected.' });
+
+    const result  = await goveeFetch(key, '/user/devices');
+    const devices = (result.data || []).map(d => {
+      const caps = goveeCaps(d);
+      return {
+        deviceId: d.device,
+        sku:      d.sku,
+        label:    d.deviceName || d.sku,
+        type:     (d.type || '').replace('devices.types.', ''),
+        supportsOnOff:      caps.onOff,
+        supportsBrightness: caps.brightness,
+        supportsColor:      caps.color,
+      };
+    });
+    res.json({ devices });
+  } catch (err) {
+    res.status(err.status === 401 ? 401 : 502).json({ error: err.message });
   }
-  alexa.getSmarthomeDevices((err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(result);
-  });
 });
 
-// ── POST command (on / off) ────────────────────────────────
-app.post('/api/alexa/devices/:entityId/command', requireAuth, (req, res) => {
-  if (!alexaReady || !alexa) {
-    return res.status(503).json({ error: 'Alexa not connected' });
-  }
-  const { command } = req.body;
-  const { entityId } = req.params;
-  const operationName = command === 'on' ? 'TurnOn' : 'TurnOff';
+// ── POST state — current values for one device ─────────────
+// (POST because Govee device ids are MAC addresses with colons)
+app.post('/api/govee/state', requireAuth, async (req, res) => {
+  try {
+    const key = await getGoveeKey();
+    if (!key) return res.status(503).json({ error: 'Govee not connected.' });
 
-  alexa.executeSmarthomeDeviceOperation({
-    entityId,
-    entityType: 'APPLIANCE',
-    operationRequest: {
-      nspace:        'Alexa.PowerController',
-      operationName,
-      entityId,
-    },
-  }, (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+    const { sku, device } = req.body || {};
+    if (!sku || !device) return res.status(400).json({ error: 'sku and device are required' });
+
+    const result = await goveeFetch(key, '/device/state', {
+      requestId: crypto.randomUUID(),
+      payload:   { sku, device },
+    });
+    res.json(goveeStateValues(result.payload));
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// ── POST control — on/off, brightness ──────────────────────
+app.post('/api/govee/control', requireAuth, async (req, res) => {
+  try {
+    const key = await getGoveeKey();
+    if (!key) return res.status(503).json({ error: 'Govee not connected.' });
+
+    const { sku, device, command } = req.body || {};
+    if (!sku || !device || !command?.name) {
+      return res.status(400).json({ error: 'sku, device and command.name are required' });
+    }
+
+    let capability;
+    if (command.name === 'onoff') {
+      capability = {
+        type:     'devices.capabilities.on_off',
+        instance: 'powerSwitch',
+        value:    command.value ? 1 : 0,
+      };
+    } else if (command.name === 'brightness') {
+      const v = Math.max(1, Math.min(100, Number(command.value) || 0));
+      capability = {
+        type:     'devices.capabilities.range',
+        instance: 'brightness',
+        value:    v,
+      };
+    } else {
+      return res.status(400).json({ error: `Unknown command: ${command.name}` });
+    }
+
+    await goveeFetch(key, '/device/control', {
+      requestId: crypto.randomUUID(),
+      payload:   { sku, device, capability },
+    });
     res.json({ success: true });
-  });
-});
-
-// ── POST speak — make an Echo say something ────────────────
-app.post('/api/alexa/speak', requireAuth, (req, res) => {
-  if (!alexaReady || !alexa) {
-    return res.status(503).json({ error: 'Alexa not connected' });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
   }
-  const { device, message } = req.body || {};
-  if (!message) return res.status(400).json({ error: 'message is required' });
-  alexa.sendSequenceCommand(device || alexa.serialNumbers && Object.keys(alexa.serialNumbers)[0], 'speak', message, (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true });
-  });
-});
-
-// ── GET echo devices (for the speak dropdown) ──────────────
-app.get('/api/alexa/echoes', requireAuth, (_req, res) => {
-  if (!alexaReady || !alexa) {
-    return res.status(503).json({ error: 'Alexa not connected' });
-  }
-  const list = Object.values(alexa.serialNumbers || {})
-    .filter(d => d.capabilities?.includes('TEXT_TO_SPEECH'))
-    .map(d => ({ serialNumber: d.serialNumber, name: d.accountName, online: d.online }));
-  res.json({ devices: list });
 });
 
 // ============================================================
@@ -1267,7 +1207,6 @@ app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 const PORT = process.env.PORT || 3000;
 connectDB()
   .then(() => {
-    initAlexa().catch(err => console.error('Alexa startup failed:', err.message));
     app.listen(PORT, () => console.log(`Listening on ${PORT}`));
     // Run bill reminder check immediately and every 6 hours
     checkBillReminders();
